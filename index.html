@@ -194,6 +194,9 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 .sw[aria-pressed="true"]{border-color:var(--fg)}
 .confirm{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--pink-bg);color:var(--pink-fg);font-size:13px}
 
+.sync-status{font-size:13px;color:var(--muted)}
+.sync-status.ok{color:var(--fg)}
+.sync-status.err{color:var(--danger)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow)}
 .banner{background:var(--orange-bg);color:var(--orange-fg);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
 @media (min-width:600px){.cell{min-height:100px;padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
@@ -238,6 +241,20 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       <h2>繰り返しの予定</h2>
       <div class="card" id="rlist"></div>
       <button class="addbtn" id="btn-addr">＋ 繰り返しの予定を追加</button>
+    </div>
+    <div class="sec">
+      <h2>2台のスマホで同期</h2>
+      <div class="card" style="padding:12px">
+        <div id="sync-status" class="sync-status">未接続</div>
+        <div id="sync-off">
+          <div class="lbl"><label for="sync-code">接続コード</label></div>
+          <textarea id="sync-code" rows="3" placeholder="接続コードを貼り付け" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+          <div class="row"><button class="btn pri" id="sync-connect">接続する</button></div>
+        </div>
+        <div id="sync-on" hidden>
+          <div class="row"><button class="btn" id="sync-now">今すぐ同期</button><button class="btn" id="sync-stop">同期をやめる</button></div>
+        </div>
+      </div>
     </div>
     <div class="sec">
       <h2>バックアップ</h2>
@@ -703,10 +720,11 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
     catch(e){ storageOk = false; throw {code: e && e.name === "QuotaExceededError" ? "quota_exceeded" : "unavailable"}; }
   }
-  if (!store){ store = {days: {}, config: clone(DEFAULTS)}; try { persist(); } catch(_){} }
+  function stampedDefaults(){ const c = clone(DEFAULTS); Object.keys(c).forEach(k => { c[k]._t = 0; }); return c; }
+  if (!store){ store = {days: {}, config: stampedDefaults()}; try { persist(); } catch(_){} }
   const listeners = {days: [], doc: {}};
   const snapDoc = (id, d) => ({id, exists: !!d, data: () => d});
-  function emitDays(){ const docs = Object.keys(store.days).sort().map(id => snapDoc(id, store.days[id])); listeners.days.forEach(f => f({docs})); }
+  function emitDays(){ const docs = Object.keys(store.days).filter(id => !store.days[id]._del).sort().map(id => snapDoc(id, store.days[id])); listeners.days.forEach(f => f({docs})); }
   function emitDoc(path){ const id = path.split("/")[1]; (listeners.doc[path] || []).forEach(f => f(snapDoc(id, store.config[id]))); }
   function emitAll(){ emitDays(); Object.keys(listeners.doc).forEach(emitDoc); }
   const localDb = {
@@ -716,15 +734,18 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       const bucket = () => col === "days" ? store.days : store.config;
       return {
         onSnapshot(cb){ (listeners.doc[path] = listeners.doc[path] || []).push(cb); setTimeout(() => emitDoc(path)); return () => {}; },
-        async set(data){ bucket()[id] = clone(data); persist(); col === "days" ? emitDays() : emitDoc(path); },
-        async delete(){ delete bucket()[id]; persist(); col === "days" ? emitDays() : emitDoc(path); },
+        async set(data){ const v = clone(data); v._t = Date.now(); bucket()[id] = v; persist(); col === "days" ? emitDays() : emitDoc(path); scheduleSync(); },
+        async delete(){ bucket()[id] = {_t: Date.now(), _del: true}; persist(); col === "days" ? emitDays() : emitDoc(path); scheduleSync(); },
       };
     },
   };
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(_){}
 
   // ---------- backup ----------
-  function backupData(){ return {app: "my-schedule", version: 1, exportedAt: new Date().toISOString(), days: store.days, config: store.config}; }
+  function backupData(){
+    const days = {}; Object.keys(store.days).forEach(k => { if (!store.days[k]._del) days[k] = store.days[k]; });
+    return {app: "my-schedule", version: 1, exportedAt: new Date().toISOString(), days, config: store.config};
+  }
   $("btn-export").onclick = async () => {
     const d = new Date(); const name = "my-schedule-" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".json";
     const text = JSON.stringify(backupData(), null, 1);
@@ -747,11 +768,95 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     $("impconf").innerHTML = '<div class="confirm">今の予定を、バックアップの内容(' + n + ' 日分)で置き換えます。<div class="row" style="margin-top:8px"><button class="btn" id="ip-no">やめる</button><button class="btn pri" id="ip-yes">置き換える</button></div></div>';
     $("ip-no").onclick = () => { $("impconf").innerHTML = ""; };
     $("ip-yes").onclick = () => {
-      const prev = store; store = {days: clone(data.days), config: Object.assign(clone(DEFAULTS), clone(data.config))};
+      const prev = store; const now = Date.now();
+      const next = {days: clone(data.days), config: Object.assign(stampedDefaults(), clone(data.config))};
+      // 読み込んだ内容を「いちばん新しい変更」として扱う(同期先も置き換わる)
+      Object.keys(store.days).forEach(k => { if (!next.days[k]) next.days[k] = {_t: now, _del: true}; });
+      Object.values(next.days).forEach(v => { v._t = now; });
+      Object.values(next.config).forEach(v => { v._t = now; });
+      store = next;
       try { persist(); } catch(err){ store = prev; toast(errMsg(err)); return; }
-      $("impconf").innerHTML = ""; emitAll(); toast(n + " 日分を読み込みました");
+      $("impconf").innerHTML = ""; emitAll(); scheduleSync(100); toast(n + " 日分を読み込みました");
     };
   };
+
+  // ---------- sync (自分のGoogleスプレッドシート経由で2台を同期) ----------
+  const SYNC_KEY = "myschedule.sync";
+  const tOf = (v) => (v && typeof v._t === "number") ? v._t : 1;
+  function mergeStore(a, b){
+    const res = {days: {}, config: {}};
+    ["days", "config"].forEach(sec => {
+      const A = (a && a[sec]) || {}, B = (b && b[sec]) || {};
+      new Set(Object.keys(A).concat(Object.keys(B))).forEach(k => {
+        const x = A[k], y = B[k];
+        res[sec][k] = !x ? y : !y ? x : (tOf(y) > tOf(x) ? y : x);
+      });
+    });
+    return res;
+  }
+  function loadSync(){ try { const v = JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); if (v && v.url && v.token) return v; } catch(_){} return null; }
+  let syncCfg = loadSync(), syncing = false, syncAgain = false, syncTimer = null, lastSync = null, syncErr = "";
+  function renderSync(){
+    const st = $("sync-status");
+    $("sync-off").hidden = !!syncCfg; $("sync-on").hidden = !syncCfg;
+    st.className = "sync-status";
+    if (!syncCfg){ st.textContent = "未接続(このスマホだけに保存しています)"; return; }
+    if (syncing){ st.textContent = "同期中…"; return; }
+    if (syncErr){ st.textContent = syncErr; st.classList.add("err"); return; }
+    if (lastSync){ st.textContent = "同期済み(最終 " + lastSync.getHours() + ":" + pad(lastSync.getMinutes()) + ")"; st.classList.add("ok"); return; }
+    st.textContent = "接続済み";
+  }
+  function scheduleSync(delay){ if (!syncCfg) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, delay == null ? 1500 : delay); }
+  async function syncNow(){
+    if (!syncCfg) return;
+    if (syncing){ syncAgain = true; return; }
+    syncing = true; renderSync();
+    try {
+      const res = await fetch(syncCfg.url, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: JSON.stringify({token: syncCfg.token, data: store}), redirect: "follow", cache: "no-store"});
+      const j = await res.json();
+      if (!j || !j.ok) throw new Error((j && j.error) || "error");
+      // 待っている間にこのスマホで変えた分も残す
+      const merged = mergeStore(j.data, store);
+      const changed = JSON.stringify(merged) !== JSON.stringify(store);
+      store = merged;
+      try { persist(); } catch(_){}
+      if (changed) emitAll();
+      lastSync = new Date(); syncErr = "";
+    } catch(e){
+      syncErr = e && e.message === "unauthorized" ? "接続コードが正しくありません。設定し直してください" : "同期できませんでした。電波のある場所で開き直すと再開します";
+    }
+    syncing = false; renderSync();
+    if (syncAgain){ syncAgain = false; scheduleSync(300); }
+  }
+  function parseCode(raw){
+    try {
+      let t = String(raw || "").replace(/\s+/g, "");
+      if (t.startsWith("MS1.")) t = t.slice(4);
+      t = t.replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "=";
+      const bin = atob(t); const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      const o = JSON.parse(new TextDecoder().decode(bytes));
+      if (o && typeof o.u === "string" && typeof o.t === "string" && /^(https:\/\/|http:\/\/localhost)/.test(o.u)) return {url: o.u, token: o.t};
+    } catch(_){}
+    return null;
+  }
+  $("sync-connect").onclick = async () => {
+    const cfg = parseCode($("sync-code").value);
+    if (!cfg){ toast("接続コードを確認してください"); return; }
+    syncCfg = cfg; try { localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); } catch(_){}
+    $("sync-code").value = "";
+    await syncNow();
+    toast(syncErr ? "接続できませんでした" : "同期しました");
+  };
+  $("sync-now").onclick = async () => { await syncNow(); toast(syncErr ? "同期できませんでした" : "同期しました"); };
+  $("sync-stop").onclick = () => {
+    syncCfg = null; syncErr = ""; lastSync = null; clearTimeout(syncTimer);
+    try { localStorage.removeItem(SYNC_KEY); } catch(_){}
+    renderSync(); toast("同期をやめました(予定はこのスマホに残ります)");
+  };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") scheduleSync(200); });
+  window.addEventListener("online", () => scheduleSync(200));
+  setInterval(() => { if (document.visibilityState === "visible" && $("sheet").hidden) syncNow(); }, 60000);
+  renderSync();
 
   // ---------- connect ----------
   render();
@@ -770,6 +875,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     db.doc("config/categories").onSnapshot(s => { state.cats = arr(s).map(c => { const r = {id: String(c.id), name: String(c.name || ""), color: String(c.color || "gray")}; if (c.fill) r.fill = true; return r; }); done("cats"); }, onErr);
     db.doc("config/items").onSnapshot(s => { state.items = arr(s).map(x => { const r = {name: String(x.name || ""), cat: String(x.cat || ""), bold: !!x.bold}; if (x.fill) r.fill = true; if (x.color) r.color = String(x.color); return r; }); done("items"); }, onErr);
     db.doc("config/recurring").onSnapshot(s => { state.rec = arr(s).map(x => { const r = {name: String(x.name || ""), cat: String(x.cat || ""), type: x.type === "monthly" ? "monthly" : "weekly"}; if (r.type === "weekly") r.dow = +x.dow || 0; else r.day = +x.day || 1; return r; }).filter(r => r.name); done("rec"); }, onErr);
+    scheduleSync(300);
     db.doc("config/holidays").onSnapshot(s => { state.holidays = arr(s).map(x => ({date: String(x.date || ""), name: String(x.name || "")})); done("hol"); }, onErr);
   })();
 })();
