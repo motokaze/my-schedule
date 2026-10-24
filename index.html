@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#263548">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="マイスケジュール">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>マイスケジュール</title>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Layout: モバイル優先の1カラム。月ヘッダー、7列カレンダー(各日に色付きの予定チップ)、下に月の予定一覧。日付タップで下から入力シート */
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --fg:#1F2B3A; --muted:#6B7785; --line:#DDE3EA;
+  --navy:#263548; --on-navy:#FFFFFF; --dim:#EEF0F3; --dim-fg:#B3BCC6; --workday:#E9ECEF; --ghost:#98A2AD;
+  --sun:#C0392B; --sat:#2E6DB4; --today:#263548; --danger:#B3261E;
+  --shadow:0 10px 30px rgba(20,32,48,.18);
+  /* 予定の色 */
+  --sky-bg:#CDEEFA; --sky-fg:#0A5874;
+  --blue-bg:#2F6BD8; --blue-fg:#FFFFFF;
+  --pink-bg:#FAD3DE; --pink-fg:#8A1F43;
+  --rose-bg:#D63A74; --rose-fg:#FFFFFF;
+  --sage-bg:#D6E6CF; --sage-fg:#33522D;
+  --lgray-bg:#E8E2D9; --lgray-fg:#5A4F42;
+  --green-bg:#D3F0DD; --green-fg:#1D6B3C;
+  --orange-bg:#FDE1C4; --orange-fg:#8A4A0F;
+  --purple-bg:#E6DAF7; --purple-fg:#5B2E99;
+  --gray-bg:#E4E8ED; --gray-fg:#46525F;
+  --f-body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",system-ui,sans-serif;
+  --f-display:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151D; --surface:#18202B; --fg:#E6ECF2; --muted:#93A0AE; --line:#2A3443;
+  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#141A22; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
+  --sun:#FF7B6E; --sat:#7EB2F2; --today:#B9CCE6; --danger:#FF8A80;
+  --shadow:0 10px 30px rgba(0,0,0,.5);
+  --sky-bg:#123F52; --sky-fg:#A9E4FA; --blue-bg:#3D74DB; --blue-fg:#FFFFFF;
+  --pink-bg:#4A2B3A; --pink-fg:#FFC2D4; --rose-bg:#C2386C; --rose-fg:#FFFFFF; --sage-bg:#28402A; --sage-fg:#C6E2BE; --lgray-bg:#3A342C; --lgray-fg:#E6DCCD; --green-bg:#1C4630; --green-fg:#B4EBC8;
+  --orange-bg:#553519; --orange-fg:#FFD3A6; --purple-bg:#3E2A63; --purple-fg:#DCC9FA;
+  --gray-bg:#2C3541; --gray-fg:#C8D1DB; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151D; --surface:#18202B; --fg:#E6ECF2; --muted:#93A0AE; --line:#2A3443;
+  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#141A22; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
+  --sun:#FF7B6E; --sat:#7EB2F2; --today:#B9CCE6; --danger:#FF8A80;
+  --shadow:0 10px 30px rgba(0,0,0,.5);
+  --sky-bg:#123F52; --sky-fg:#A9E4FA; --blue-bg:#3D74DB; --blue-fg:#FFFFFF;
+  --pink-bg:#4A2B3A; --pink-fg:#FFC2D4; --rose-bg:#C2386C; --rose-fg:#FFFFFF; --sage-bg:#28402A; --sage-fg:#C6E2BE; --lgray-bg:#3A342C; --lgray-fg:#E6DCCD; --green-bg:#1C4630; --green-fg:#B4EBC8;
+  --orange-bg:#553519; --orange-fg:#FFD3A6; --purple-bg:#3E2A63; --purple-fg:#DCC9FA;
+  --gray-bg:#2C3541; --gray-fg:#C8D1DB; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:720px;margin:0 auto;padding-block:12px 40px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sat);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 12px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.04em;color:var(--muted)}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:999px;font-size:13px;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--navy);color:var(--on-navy)}
+.monthbar{display:flex;align-items:center;gap:6px;padding:0 2px 10px}
+.monthbar h1{font-family:var(--f-display);font-weight:700;font-size:26px;margin:0;flex:1;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.monthbar h1 small{font-size:15px;color:var(--muted);margin-right:4px;font-weight:700}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;font-size:16px}
+.todaybtn{height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:13px}
+
+/* colors */
+.c-sky{background:var(--sky-bg);color:var(--sky-fg)}
+.c-blue{background:var(--blue-bg);color:var(--blue-fg)}
+.c-pink{background:var(--pink-bg);color:var(--pink-fg)}
+.c-rose{background:var(--rose-bg);color:var(--rose-fg)}
+.c-sage{background:var(--sage-bg);color:var(--sage-fg)}
+.c-lgray{background:var(--lgray-bg);color:var(--lgray-fg)}
+.c-green{background:var(--green-bg);color:var(--green-fg)}
+.c-orange{background:var(--orange-bg);color:var(--orange-fg)}
+.c-purple{background:var(--purple-bg);color:var(--purple-fg)}
+.c-gray{background:var(--gray-bg);color:var(--gray-fg)}
+
+/* calendar */
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:pan-y;user-select:none}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow div{background:var(--navy);color:var(--on-navy);text-align:center;font-size:12px;font-weight:700;padding:7px 0;letter-spacing:.08em}
+.dow div:first-child{color:#FFB3AB}
+.dow div:last-child{color:#AFCBF2}
+.grid{transition:opacity .18s ease}
+.grid.fade{opacity:.25}
+.cell{min-height:84px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 2px 5px;display:flex;flex-direction:column;gap:2px;background:var(--surface);cursor:pointer;text-align:left;min-width:0}
+.cell:nth-child(7n){border-right:0}
+.cell.out{background:var(--dim)}
+.cell.out .d{color:var(--ghost)!important}
+.cell.out .hn{color:var(--ghost)}
+.chip.ghost{background:transparent;color:var(--ghost);font-weight:400;padding:1px 3px}
+.cell.workday{background:var(--workday)}
+.d{display:flex;flex-wrap:wrap;align-items:center;column-gap:1px;row-gap:2px;font-weight:700;font-size:13px;line-height:1;padding-left:2px;font-variant-numeric:tabular-nums;min-width:0}
+.d .rl{white-space:nowrap;letter-spacing:-.02em;font-size:9px;line-height:1.2}
+.d .num{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:999px}
+.cell.today .d .num{background:var(--today);color:var(--surface)}
+.d.sun,.d.holi{color:var(--sun)}
+.d.sat{color:var(--sat)}
+.hn{font-size:9px;color:var(--sun);line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-left:2px}
+.chip{display:block;font-size:10px;line-height:1.25;padding:2px 3px;border-radius:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chip.b{font-weight:700}
+.chip .nm{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chip .t{display:block;font-size:8.5px;line-height:1.2;opacity:.85;font-weight:400;font-variant-numeric:tabular-nums;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cell.fill .chip.isfill{background:transparent;text-align:center;font-size:13px;font-weight:700;padding:4px 0}
+.cell.today.fill .d .num{background:var(--today);color:var(--surface)}
+.times{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
+.times span{color:var(--muted)}
+input[type=time]{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+.tedit{display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px;align-items:center;margin-top:6px;width:100%}
+.curev{flex-wrap:wrap}
+.curev .tag{font-size:11px;border:1px solid currentColor;border-radius:999px;padding:0 6px;opacity:.75;flex:none}
+.curev.skipped{opacity:.45}
+.curev.skipped span:not(.tag){text-decoration:line-through}
+.curev .tm{font-size:12px;font-variant-numeric:tabular-nums;opacity:.85;flex:none}
+.more{font-size:10px;color:var(--muted);padding-left:3px}
+.hint{font-size:12px;color:var(--muted);padding:8px 4px 0}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);padding:8px 4px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+
+/* month list */
+.sec{margin-top:22px}
+.sec h2{font-family:var(--f-display);font-size:16px;margin:0 0 8px 4px}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;width:100%}
+.item .when{font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
+.item .when span{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.item .evs{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.pill{display:inline-block;font-size:13px;padding:3px 9px;border-radius:999px;max-width:100%;overflow-wrap:anywhere}
+.pill.b{font-weight:700}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:13px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,16,24,.45);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:var(--shadow);max-height:88vh;overflow:auto;padding-top:10px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));animation:up .2s ease}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.grid{transition:none}}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+.sheet-in{max-width:640px;margin:0 auto}
+.sh-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.sh-head h3{font-family:var(--f-display);font-size:22px;margin:0;font-variant-numeric:tabular-nums}
+.sh-head .hname{color:var(--sun);font-size:13px;font-weight:700}
+.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:16px 0 6px}
+.cur{display:flex;flex-direction:column;gap:6px}
+.curev{display:flex;align-items:center;gap:8px;border-radius:10px;padding:8px 8px 8px 12px;font-size:15px}
+.curev.b{font-weight:700}
+.curev span{flex:1;min-width:0;overflow-wrap:anywhere}
+.curev button{border:0;background:rgba(0,0,0,.08);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:12px;color:inherit}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.qbtn{border:0;border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+.qbtn.b{font-weight:700}
+.qbtn[disabled]{opacity:.35;cursor:default}
+.free{display:grid;grid-template-columns:1fr auto;gap:8px}
+.catsel{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.catsel button{border:1.5px solid transparent;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+.catsel button[aria-pressed="true"]{border-color:var(--fg)}
+textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.row{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.btn.small{flex:none;height:46px;padding:0 16px}
+.btn:disabled{opacity:.5}
+
+/* settings */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 12px}
+.grp{font-size:12px;font-weight:700;color:var(--muted);padding:10px 0 2px;display:flex;align-items:center;gap:8px}
+.grp i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.prow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.pact{display:flex;gap:4px;align-items:center}
+.mini{height:34px;min-width:34px;padding:0 8px;border-radius:9px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:12px}
+.mini.on{background:var(--navy);color:var(--on-navy);border-color:var(--navy);font-weight:700}
+.mini.del{color:var(--danger)}
+.addbtn{margin-top:10px;width:100%;height:44px;border-radius:12px;border:1px dashed var(--line);background:transparent;cursor:pointer;color:var(--muted);font-weight:700}
+.hrow{display:grid;grid-template-columns:118px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.hrow:last-child{border-bottom:0}
+.hrow .hd{font-variant-numeric:tabular-nums}
+.help{font-size:12px;color:var(--muted);margin:6px 4px 0}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px}
+.chk input{width:20px;height:20px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:40px;height:40px;border-radius:10px;border:2px solid transparent;cursor:pointer;font-size:11px}
+.sw[aria-pressed="true"]{border-color:var(--fg)}
+.confirm{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--pink-bg);color:var(--pink-fg);font-size:13px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow)}
+.banner{background:var(--orange-bg);color:var(--orange-fg);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+@media (min-width:600px){.cell{min-height:100px;padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
+/* スマホ: 画面の高さいっぱいにカレンダーを縦に伸ばす(上部のヘッダー等の約170pxを引いて週の数で割る) */
+@media (max-width:599px){.cell{min-height:max(96px, calc((100dvh - 100px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) / var(--rows,6)))}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">マイスケジュール</div>
+    <button class="iconbtn" id="btn-view" aria-label="設定">⚙</button>
+  </div>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="view-cal">
+    <div class="monthbar">
+      <h1 id="mtitle"><small>2026年</small>10月</h1>
+      <button class="todaybtn" id="btn-today">今月</button>
+      <button class="iconbtn" id="btn-prev" aria-label="前の月">◀</button>
+      <button class="iconbtn" id="btn-next" aria-label="次の月">▶</button>
+    </div>
+    <div class="cal" id="cal">
+      <div class="dow"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <section id="view-set" hidden>
+    <div class="sec" style="margin-top:4px">
+      <h2>カテゴリ</h2>
+      <div class="card" id="clist"></div>
+      <button class="addbtn" id="btn-addc">＋ カテゴリを追加</button>
+    </div>
+    <div class="sec">
+      <h2>よく使う予定</h2>
+      <div class="card" id="plist"></div>
+      <button class="addbtn" id="btn-addp">＋ よく使う予定を追加</button>
+    </div>
+    <div class="sec">
+      <h2>繰り返しの予定</h2>
+      <div class="card" id="rlist"></div>
+      <button class="addbtn" id="btn-addr">＋ 繰り返しの予定を追加</button>
+    </div>
+    <div class="sec">
+      <h2>バックアップ</h2>
+      <div class="card" style="padding:12px">
+        <div class="row" style="margin-top:0"><button class="btn" id="btn-export">書き出す</button><button class="btn" id="btn-import">読み込む</button></div>
+        <input type="file" id="imp-file" accept="application/json,.json" hidden>
+        <div id="impconf"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h2>祝日</h2>
+      <div class="card" id="hlist"></div>
+      <button class="addbtn" id="btn-addh">＋ 祝日を追加</button>
+    </div>
+  </section>
+</div>
+
+<div id="scrim" class="scrim" hidden></div>
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sh-title">
+  <div class="grab"></div>
+  <div class="sheet-in" id="sheet-in"></div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+  "use strict";
+  const WD = ["日","月","火","水","木","金","土"];
+  const COLORS = [["sky","水色"],["blue","青"],["sage","セージグリーン"],["lgray","グレージュ"],["rose","濃いピンク"],["pink","ピンク"],["green","緑"],["orange","オレンジ"],["purple","紫"],["gray","グレー"]];
+  const COLOR_IDS = COLORS.map(c => c[0]);
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2,"0");
+  const key = (y,m,d) => y + "-" + pad(m) + "-" + pad(d);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const now = new Date();
+  const todayKey = key(now.getFullYear(), now.getMonth()+1, now.getDate());
+
+  const state = {
+    y: now.getFullYear(), m: now.getMonth()+1,
+    days: {},        // "YYYY-MM-DD" -> [{name, cat}]
+    cats: [],        // [{id, name, color}]
+    items: [],       // [{name, cat, bold, color?}]
+    holidays: [],    // [{date, name}]
+    rec: [],         // [{name, cat, type:"weekly"|"monthly", dow?, day?}]
+    skips: {},       // "YYYY-MM-DD" -> [name] 繰り返しを消した日
+    db: null, ready: false, view: "cal",
+  };
+
+  // ---------- helpers ----------
+  function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 1800); }
+  const holidayName = (k) => { const h = state.holidays.find(x => x.date === k); return h ? h.name : ""; };
+  const catById = (id) => state.cats.find(c => c.id === id);
+  const itemByName = (n) => state.items.find(i => i.name === n);
+  function evStyle(ev){
+    const it = itemByName(ev.name);
+    const cat = catById(it ? it.cat : ev.cat) || catById(ev.cat);
+    let color = (it && it.color) || (cat && cat.color) || "gray";
+    if (!COLOR_IDS.includes(color)) color = "gray";
+    return {cls: "c-" + color, bold: !!(it && it.bold), fill: !!(it && it.fill)};
+  }
+  function dateOf(k){ return new Date(+k.slice(0,4), +k.slice(5,7)-1, +k.slice(8,10)); }
+  const timeText = (ev) => ev.start ? ev.start + "～" + (ev.end || "") : "";
+  function sortEvs(list){
+    return list.map((e,i) => [e,i]).sort((a,b) => {
+      const sa = a[0].start || "", sb = b[0].start || "";
+      if (sa === sb) return a[1] - b[1];
+      if (!sa) return -1; if (!sb) return 1;
+      return sa < sb ? -1 : 1;
+    }).map(x => x[0]);
+  }
+  function cleanEv(e){ const r = {name: String(e.name || ""), cat: String(e.cat || "")}; if (e.start) r.start = String(e.start); if (e.end) r.end = String(e.end); return r; }
+
+  function recurOn(k, includeSkipped){
+    const d = dateOf(k); const sk = state.skips[k] || [];
+    const hit = state.rec.filter(r => (r.type === "weekly" && d.getDay() === r.dow) || (r.type === "monthly" && d.getDate() === r.day));
+    // 毎月の予定と毎週の予定が同じ日に重なったら、毎月の予定だけを表示
+    const hasMonthly = hit.some(r => r.type === "monthly");
+    return hit.filter(r => !hasMonthly || r.type === "monthly")
+      .filter(r => includeSkipped || !sk.includes(r.name))
+      .map(r => ({name: r.name, cat: r.cat, rec: r.type}));
+  }
+  function allEvs(k){
+    const own = state.days[k] || [];
+    return sortEvs(recurOn(k).filter(r => !own.some(e => e.name === r.name)).concat(own));
+  }
+  const recText = (r) => r.type === "weekly" ? "毎週" + WD[r.dow] + "曜" : "毎月" + r.day + "日";
+
+  // ---------- render ----------
+  function catFill(ev){ const it = itemByName(ev.name); const c = catById(it ? it.cat : ev.cat) || catById(ev.cat); return !!(c && c.fill); }
+  function renderCal(){
+    const y = state.y, m = state.m;
+    $("mtitle").innerHTML = "<small>" + y + "年</small>" + m + "月";
+    const first = new Date(y, m-1, 1);
+    const lead = first.getDay();
+    const last = new Date(y, m, 0).getDate();
+    const total = Math.ceil((lead + last) / 7) * 7;
+    let html = "";
+    for (let i = 0; i < total; i++){
+      const dt = new Date(y, m-1, i - lead + 1);
+      const dy = dt.getFullYear(), dm = dt.getMonth()+1, day = dt.getDate();
+      const out = dm !== m;
+      const k = key(dy, dm, day);
+      const all = allEvs(k);
+      const recl = all.filter(ev => ev.rec).map(ev => "＜" + esc(ev.name) + "＞").join("");
+      const evs = all.filter(ev => !ev.rec);
+      const hn = holidayName(k);
+      const dcls = "d" + (hn ? " holi" : dt.getDay() === 0 ? " sun" : dt.getDay() === 6 ? " sat" : "");
+      let cls = "cell" + (out ? " out" : ""), style = "", chips;
+      if (out){
+        // 前後の月の日はグレーの文字だけで予定を表示
+        chips = evs.slice(0,3).map(ev => '<span class="chip ghost">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>").join("");
+        if (evs.length > 3) chips += '<span class="more">+' + (evs.length - 3) + "</span>";
+      } else {
+        // 塗りつぶし: 予定ごとの塗り(休など) > 塗りありカテゴリ
+        const fillEv = evs.find(ev => evStyle(ev).fill);
+        if (fillEv) style = ' style="background:var(--' + evStyle(fillEv).cls.slice(2) + '-bg)"';
+        else if (evs.some(catFill)) cls += " workday";
+        const vis = evs.filter(ev => !evStyle(ev).fill);
+        chips = vis.slice(0,3).map(ev => { const s = evStyle(ev); return '<span class="chip ' + s.cls + (s.bold ? " b" : "") + '">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>"; }).join("");
+        if (vis.length > 3) chips += '<span class="more">+' + (vis.length - 3) + "</span>";
+      }
+      if (k === todayKey) cls += " today";
+      const label = dm + "月" + day + "日" + (all.length ? " " + all.map(e => (e.start ? e.start + " " : "") + e.name).join("、") : "");
+      html += '<button class="' + cls + '" data-k="' + k + '"' + style + ' aria-label="' + esc(label) + '">' +
+        '<span class="' + dcls + '"><span class="num">' + day + "</span>" + (recl ? '<span class="rl">' + recl + "</span>" : "") + "</span>" + (hn ? '<span class="hn">' + esc(hn) + "</span>" : "") + chips + "</button>";
+    }
+    $("grid").innerHTML = html;
+    $("grid").style.setProperty("--rows", String(total / 7));
+  }
+  function renderSet(){
+    $("clist").innerHTML = state.cats.length ? state.cats.map((c,i) =>
+      '<div class="prow"><div><span class="pill c-' + esc(c.color) + '">' + esc(c.name) + '</span></div><div class="pact">' +
+      '<button class="mini" data-cact="up" data-i="' + i + '" aria-label="上へ"' + (i===0?" disabled":"") + '>↑</button>' +
+      '<button class="mini" data-cact="edit" data-i="' + i + '">編集</button></div></div>').join("")
+      : '<div class="empty" style="border:0">カテゴリがありません。</div>';
+    let ph = "";
+    state.cats.forEach(c => {
+      const its = state.items.map((it,i) => [it,i]).filter(([it]) => it.cat === c.id);
+      ph += '<div class="grp"><i class="c-' + esc(c.color) + '"></i>' + esc(c.name) + "</div>";
+      if (!its.length) ph += '<div class="prow"><span style="color:var(--muted);font-size:13px">登録なし</span><span></span></div>';
+      its.forEach(([it,i]) => {
+        const s = evStyle({name: it.name, cat: it.cat});
+        ph += '<div class="prow"><div><span class="pill ' + s.cls + (it.bold ? " b" : "") + '">' + esc(it.name) + '</span></div><div class="pact">' +
+          '<button class="mini' + (it.bold ? " on" : "") + '" data-act="bold" data-i="' + i + '" aria-pressed="' + !!it.bold + '">太字</button>' +
+          '<button class="mini" data-act="up" data-i="' + i + '" aria-label="上へ">↑</button>' +
+          '<button class="mini" data-act="edit" data-i="' + i + '">編集</button></div></div>';
+      });
+    });
+    $("plist").innerHTML = ph || '<div class="empty" style="border:0">先にカテゴリを追加してください。</div>';
+    $("rlist").innerHTML = state.rec.length ? state.rec.map((r,i) => { const s = evStyle(r);
+      return '<div class="prow"><div><span class="pill ' + s.cls + (s.bold ? " b" : "") + '">' + esc(r.name) + '</span> <span style="font-size:13px;color:var(--muted)">' + recText(r) + '</span></div><div class="pact"><button class="mini del" data-rdel="' + i + '">削除</button></div></div>'; }).join("")
+      : '<div class="empty" style="border:0">繰り返しの予定はありません。</div>';
+    const hs = [...state.holidays].sort((a,b) => a.date < b.date ? -1 : 1);
+    $("hlist").innerHTML = hs.length ? hs.map(h => '<div class="hrow"><span class="hd">' + h.date.replace(/-/g,"/") + "(" + WD[dateOf(h.date).getDay()] + ')</span><span>' + esc(h.name) + '</span><button class="mini del" data-hdel="' + h.date + '">削除</button></div>').join("")
+      : '<div class="empty" style="border:0">祝日が登録されていません。</div>';
+  }
+  function render(){ if (state.view === "cal") renderCal(); else renderSet(); }
+
+  // ---------- sheet ----------
+  function openSheet(html){ $("sheet-in").innerHTML = html; $("scrim").hidden = false; $("sheet").hidden = false; document.body.style.overflow = "hidden"; }
+  function closeSheet(){ $("scrim").hidden = true; $("sheet").hidden = true; $("sheet-in").innerHTML = ""; document.body.style.overflow = ""; sheetDay = null; }
+  $("scrim").addEventListener("click", closeSheet);
+
+  let sheetDay = null, freeCat = null, editTime = null;
+  function openDay(k){
+    sheetDay = k; editTime = null;
+    ["free","ns","ne"].forEach(id => { if ($(id)) $(id).value = ""; });
+    if (!freeCat || !catById(freeCat)) freeCat = (state.cats.find(c => c.id === "private") || state.cats[0] || {}).id || null;
+    drawDay();
+  }
+  function drawDay(){
+    const k = sheetDay; if (!k) return;
+    const d = dateOf(k); const hn = holidayName(k);
+    const evs = state.days[k] || [];
+    const recs = recurOn(k, true).filter(r => !evs.some(e => e.name === r.name));
+    const sk = state.skips[k] || [];
+    const recHtml = recs.map(r => { const s = evStyle(r); const off = sk.includes(r.name);
+      return '<div class="curev ' + s.cls + (s.bold ? " b" : "") + (off ? " skipped" : "") + '"><span class="tag">' + (r.rec === "weekly" ? "毎週" : "毎月") + "</span><span>" + esc(r.name) + '</span><button data-skip="' + esc(r.name) + '">' + (off ? "戻す" : "この日は消す") + "</button></div>"; }).join("");
+    const cur = recHtml + (evs.length || recs.length ? "" : '<div class="empty">予定はありません。下から追加してください。</div>') + (evs.length ? evs.map((ev,i) => { const s = evStyle(ev); return '<div class="curev ' + s.cls + (s.bold ? " b" : "") + '">' + (ev.start ? '<span class="tm">' + esc(timeText(ev)) + "</span>" : "") + "<span>" + esc(ev.name) + '</span><button data-tm="' + i + '">時刻</button><button data-rm="' + i + '" aria-label="' + esc(ev.name) + 'を削除">削除</button>' +
+        (editTime === i ? '<div class="tedit"><input type="time" id="te-s" aria-label="開始" value="' + esc(ev.start || "") + '"><span>〜</span><input type="time" id="te-e" aria-label="終了" value="' + esc(ev.end || "") + '"><button id="te-ok">保存</button></div>' : "") + "</div>"; }).join("") : "");
+    let quick = "";
+    state.cats.forEach(c => {
+      const its = state.items.filter(it => it.cat === c.id);
+      if (!its.length) return;
+      quick += '<div class="lbl">' + esc(c.name) + '</div><div class="quick">' + its.map(it => {
+        const s = evStyle({name: it.name, cat: it.cat}); const has = allEvs(k).some(e => e.name === it.name);
+        return '<button class="qbtn ' + s.cls + (it.bold ? " b" : "") + '" data-add="' + esc(it.name) + '"' + (has ? " disabled" : "") + ">＋ " + esc(it.name) + "</button>";
+      }).join("") + "</div>";
+    });
+    const keepText = $("free") ? $("free").value : "";
+    const keepS = $("ns") ? $("ns").value : "", keepE = $("ne") ? $("ne").value : "";
+    openSheet(
+      '<div class="sh-head"><h3 id="sh-title">' + (d.getMonth()+1) + "月" + d.getDate() + "日(" + WD[d.getDay()] + ")</h3>" + (hn ? '<span class="hname">' + esc(hn) + "</span>" : "") + "</div>" +
+      '<div class="cur" id="cur">' + cur + "</div>" +
+      '<div class="lbl">時刻</div><div class="times"><input type="time" id="ns" aria-label="開始時刻" value="' + esc(keepS) + '"><span>〜</span><input type="time" id="ne" aria-label="終了時刻" value="' + esc(keepE) + '"></div>' + quick +
+      '<div class="lbl"><label for="free">その他の予定</label></div><div class="free"><input type="text" id="free" placeholder="例:歯医者" value="' + esc(keepText) + '"><button class="btn pri small" id="free-add">追加</button></div>' +
+      '<div class="catsel" id="catsel">' + state.cats.map(c => '<button class="c-' + esc(c.color) + '" data-cat="' + esc(c.id) + '" aria-pressed="' + (c.id === freeCat) + '">' + esc(c.name) + "</button>").join("") + "</div>" +
+      '<div class="row"><button class="btn" id="sh-close">閉じる</button></div>'
+    );
+    $("sh-close").onclick = closeSheet;
+    $("cur").onclick = e => {
+      const sb = e.target.closest("[data-skip]");
+      if (sb){ toggleSkip(k, sb.dataset.skip); return; }
+      const rm = e.target.closest("[data-rm]");
+      if (rm){ editTime = null; changeDay(k, list => list.filter((_,i) => i !== +rm.dataset.rm), "削除しました"); return; }
+      const tm = e.target.closest("[data-tm]");
+      if (tm){ editTime = editTime === +tm.dataset.tm ? null : +tm.dataset.tm; drawDay(); return; }
+      if (e.target.id === "te-ok"){
+        const i = editTime, s = $("te-s").value, en = $("te-e").value; editTime = null;
+        changeDay(k, list => list.map((ev,j) => { if (j !== i) return ev; const r = {name: ev.name, cat: ev.cat}; if (s) r.start = s; if (s && en) r.end = en; return r; }), "時刻を保存しました");
+      }
+    };
+    const withTime = (ev) => { const s = $("ns").value, en = $("ne").value; if (s) ev.start = s; if (s && en) ev.end = en; $("ns").value = ""; $("ne").value = ""; return ev; };
+    $("sheet-in").querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
+      const it = itemByName(b.dataset.add); if (!it) return;
+      const ev = withTime({name: it.name, cat: it.cat});
+      changeDay(k, list => list.concat([ev]), "追加しました");
+    });
+    $("catsel").onclick = e => { const b = e.target.closest("[data-cat]"); if (!b) return; freeCat = b.dataset.cat; $("catsel").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); };
+    const addFree = () => {
+      const v = $("free").value.trim(); if (!v) { toast("予定の内容を入力してください"); return; }
+      if (!freeCat){ toast("先に設定でカテゴリを追加してください"); return; }
+      $("free").value = "";
+      const it = itemByName(v);
+      const ev = withTime({name: v, cat: it ? it.cat : freeCat});
+      changeDay(k, list => list.concat([ev]), "追加しました");
+    };
+    $("free-add").onclick = addFree;
+    $("free").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); addFree(); } });
+  }
+
+  // ---------- writes ----------
+  let chain = Promise.resolve();
+  function queue(fn){ const p = chain.then(fn); chain = p.catch(() => {}); return p; }
+  function errMsg(err){
+    const c = err && err.code;
+    if (c === "invalid_argument") return "このアカウントでは編集できません";
+    if (c === "quota_exceeded") return "保存できる量の上限に達しました";
+    if (!state.db) return "保存できませんでした。アプリを開き直してください";
+    return "保存できませんでした。スマホの空き容量を確認してください";
+  }
+  function writeDay(k, list){
+    const skip = (state.skips[k] || []).slice();
+    return queue(async () => {
+      const ref = state.db.doc("days/" + k);
+      if (!list.length && !skip.length) await ref.delete();
+      else { const body = {date: k, events: list}; if (skip.length) body.skip = skip; await ref.set(body); }
+    });
+  }
+  function toggleSkip(k, name){
+    if (!state.db){ toast(errMsg()); return; }
+    const prev = (state.skips[k] || []).slice();
+    const next = prev.includes(name) ? prev.filter(n => n !== name) : prev.concat([name]);
+    if (next.length) state.skips[k] = next; else delete state.skips[k];
+    render(); drawDay();
+    writeDay(k, state.days[k] || []).then(() => toast(next.includes(name) ? "この日の「" + name + "」を消しました" : "元に戻しました")).catch(err => {
+      if (prev.length) state.skips[k] = prev; else delete state.skips[k];
+      render(); drawDay(); toast(errMsg(err));
+    });
+  }
+  const saveRec = (list) => { state.rec = list; render(); return queue(() => state.db.doc("config/recurring").set({items: list})); };
+  function changeDay(k, fn, msg){
+    if (!state.db){ toast(errMsg()); return; }
+    const prev = state.days[k] || [];
+    const next = sortEvs(fn(prev.slice()).map(cleanEv));
+    if (next.length) state.days[k] = next; else delete state.days[k];
+    render(); drawDay();
+    writeDay(k, next).then(() => { if (msg) toast(msg); }).catch(err => {
+      if (prev.length) state.days[k] = prev; else delete state.days[k];
+      render(); drawDay(); toast(errMsg(err));
+    });
+  }
+  const saveCats = (list) => { state.cats = list; render(); return queue(() => state.db.doc("config/categories").set({items: list})); };
+  const saveItems = (list) => { state.items = list; render(); return queue(() => state.db.doc("config/items").set({items: list})); };
+  const saveHolidays = (list) => { state.holidays = list; render(); return queue(() => state.db.doc("config/holidays").set({items: list})); };
+
+  async function renameEverywhere(oldName, newName, newCat){
+    const ks = Object.keys(state.days).filter(k => state.days[k].some(e => e.name === oldName));
+    for (const k of ks){
+      const next = state.days[k].map(e => e.name === oldName ? cleanEv({...e, name: newName, cat: newCat}) : e);
+      state.days[k] = next; await writeDay(k, next);
+    }
+    render(); return ks.length;
+  }
+
+  function swatches(sel, allowNone){
+    return '<div class="swatches" id="sws">' + (allowNone ? '<button class="sw" style="background:var(--bg);color:var(--muted)" data-c="" aria-pressed="' + (!sel) + '">なし</button>' : "") +
+      COLORS.map(([id,n]) => '<button class="sw c-' + id + '" data-c="' + id + '" aria-label="' + n + '" title="' + n + '" aria-pressed="' + (sel === id) + '"></button>').join("") + "</div>";
+  }
+  function bindSwatches(get, set){
+    $("sws").onclick = e => { const b = e.target.closest(".sw"); if (!b) return; set(b.dataset.c); $("sws").querySelectorAll(".sw").forEach(x => x.setAttribute("aria-pressed", String(x === b))); };
+  }
+
+  // ---------- settings: categories ----------
+  $("clist").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-cact]"); if (!b || !state.db) return;
+    const i = +b.dataset.i;
+    if (b.dataset.cact === "up" && i > 0){ const l = state.cats.map(c => ({...c})); [l[i-1], l[i]] = [l[i], l[i-1]]; try { await saveCats(l); } catch(err){ toast(errMsg(err)); } }
+    if (b.dataset.cact === "edit") editCat(i);
+  });
+  function editCat(i){
+    const isNew = i === -1; const c = isNew ? {id: "c" + Date.now().toString(36), name: "", color: "green"} : state.cats[i];
+    let color = c.color;
+    openSheet('<div class="sh-head"><h3 id="sh-title">' + (isNew ? "カテゴリを追加" : "カテゴリを編集") + '</h3></div>' +
+      '<div class="lbl"><label for="cn">名前</label></div><input type="text" id="cn" value="' + esc(c.name) + '" placeholder="例:趣味">' +
+      '<div class="lbl">色</div>' + swatches(color, false) +
+      '<label class="chk"><input type="checkbox" id="cf"' + (c.fill ? " checked" : "") + '>この予定がある日はマスをグレーで塗りつぶす</label><div id="cconf"></div>' +
+      '<div class="row">' + (isNew ? "" : '<button class="btn" id="c-del" style="color:var(--danger)">削除</button>') + '<button class="btn" id="c-cancel">閉じる</button><button class="btn pri" id="c-save">保存</button></div>');
+    bindSwatches(() => color, v => { color = v; });
+    $("c-cancel").onclick = closeSheet;
+    if (!isNew) $("c-del").onclick = () => {
+      const n = state.items.filter(it => it.cat === c.id).length;
+      if (n){ $("cconf").innerHTML = '<div class="confirm">このカテゴリには「よく使う予定」が ' + n + " 件あります。先にそれらを別のカテゴリへ移すか削除してください。</div>"; return; }
+      $("cconf").innerHTML = '<div class="confirm">「' + esc(c.name) + '」を削除します。<div class="row" style="margin-top:8px"><button class="btn" id="cc-no">やめる</button><button class="btn pri" id="cc-yes" style="background:var(--danger);border-color:var(--danger)">削除する</button></div></div>';
+      $("cc-no").onclick = () => { $("cconf").innerHTML = ""; };
+      $("cc-yes").onclick = async () => { try { await saveCats(state.cats.filter((_,j) => j !== i)); closeSheet(); toast("削除しました"); } catch(err){ toast(errMsg(err)); } };
+    };
+    $("c-save").onclick = async () => {
+      const n = $("cn").value.trim(); if (!n){ toast("名前を入力してください"); return; }
+      const l = state.cats.map(x => ({...x}));
+      const rec = {id: c.id, name: n, color}; if ($("cf").checked) rec.fill = true;
+      if (isNew) l.push(rec); else l[i] = rec;
+      try { await saveCats(l); closeSheet(); toast("保存しました"); } catch(err){ toast(errMsg(err)); }
+    };
+  }
+  $("btn-addc").onclick = () => { if (state.db) editCat(-1); };
+
+  // ---------- settings: items ----------
+  $("plist").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-act]"); if (!b || !state.db) return;
+    const i = +b.dataset.i; const l = state.items.map(x => ({...x}));
+    try {
+      if (b.dataset.act === "bold"){ l[i].bold = !l[i].bold; await saveItems(l); }
+      else if (b.dataset.act === "up"){
+        let j = i - 1; while (j >= 0 && l[j].cat !== l[i].cat) j--;
+        if (j >= 0){ [l[j], l[i]] = [l[i], l[j]]; await saveItems(l); }
+      }
+      else if (b.dataset.act === "edit") editItem(i);
+    } catch(err){ toast(errMsg(err)); }
+  });
+  function editItem(i){
+    if (!state.cats.length){ toast("先にカテゴリを追加してください"); return; }
+    const isNew = i === -1; const it = isNew ? {name: "", cat: state.cats[0].id, bold: false, color: ""} : state.items[i];
+    let color = it.color || ""; let cat = it.cat;
+    openSheet('<div class="sh-head"><h3 id="sh-title">' + (isNew ? "よく使う予定を追加" : "よく使う予定を編集") + '</h3></div>' +
+      '<div class="lbl"><label for="in">名前</label></div><input type="text" id="in" value="' + esc(it.name) + '" placeholder="例:洗濯">' +
+      '<div class="lbl">カテゴリ</div><div class="catsel" id="icat">' + state.cats.map(c => '<button class="c-' + esc(c.color) + '" data-cat="' + esc(c.id) + '" aria-pressed="' + (c.id === cat) + '">' + esc(c.name) + "</button>").join("") + "</div>" +
+      '<div class="lbl">色</div>' + swatches(color, true) +
+      '<label class="chk"><input type="checkbox" id="ib"' + (it.bold ? " checked" : "") + '>太字で表示する</label>' +
+      '<label class="chk"><input type="checkbox" id="if"' + (it.fill ? " checked" : "") + '>この予定がある日はマス全体を塗りつぶす</label><div id="iconf"></div>' +
+      '<div class="row">' + (isNew ? "" : '<button class="btn" id="i-del" style="color:var(--danger)">削除</button>') + '<button class="btn" id="i-cancel">閉じる</button><button class="btn pri" id="i-save">保存</button></div>');
+    bindSwatches(() => color, v => { color = v; });
+    $("icat").onclick = e => { const b = e.target.closest("[data-cat]"); if (!b) return; cat = b.dataset.cat; $("icat").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); };
+    $("i-cancel").onclick = closeSheet;
+    if (!isNew) $("i-del").onclick = () => {
+      $("iconf").innerHTML = '<div class="confirm">「' + esc(it.name) + '」をボタンから外します。入力済みの日の予定は残ります。<div class="row" style="margin-top:8px"><button class="btn" id="ic-no">やめる</button><button class="btn pri" id="ic-yes" style="background:var(--danger);border-color:var(--danger)">削除する</button></div></div>';
+      $("ic-no").onclick = () => { $("iconf").innerHTML = ""; };
+      $("ic-yes").onclick = async () => { try { await saveItems(state.items.filter((_,j) => j !== i)); closeSheet(); toast("削除しました"); } catch(err){ toast(errMsg(err)); } };
+    };
+    $("i-save").onclick = async () => {
+      const n = $("in").value.trim(); if (!n){ toast("名前を入力してください"); return; }
+      if (state.items.some((x,j) => x.name === n && j !== i)){ toast("同じ名前の予定があります"); return; }
+      const l = state.items.map(x => ({...x})); const rec = {name: n, cat, bold: $("ib").checked}; if ($("if").checked) rec.fill = true; if (color) rec.color = color;
+      const old = isNew ? null : it.name;
+      if (isNew) l.push(rec); else l[i] = rec;
+      $("i-save").disabled = true;
+      try {
+        await saveItems(l);
+        let moved = 0; if (old && (old !== n || it.cat !== cat)) moved = await renameEverywhere(old, n, cat);
+        closeSheet(); toast(moved && old !== n ? moved + " 日分を新しい名前に置き換えました" : "保存しました");
+      } catch(err){ $("i-save").disabled = false; toast(errMsg(err)); }
+    };
+  }
+  $("btn-addp").onclick = () => { if (state.db) editItem(-1); };
+
+  // ---------- settings: recurring ----------
+  $("rlist").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-rdel]"); if (!b || !state.db) return;
+    try { await saveRec(state.rec.filter((_,i) => i !== +b.dataset.rdel)); toast("削除しました"); } catch(err){ toast(errMsg(err)); }
+  });
+  $("btn-addr").onclick = () => {
+    if (!state.db) return;
+    if (!state.cats.length){ toast("先にカテゴリを追加してください"); return; }
+    let type = "weekly", cat = state.cats[0].id;
+    openSheet('<div class="sh-head"><h3 id="sh-title">繰り返しの予定を追加</h3></div>' +
+      '<div class="lbl"><label for="rn">名前</label></div><input type="text" id="rn" placeholder="例:ゴミ出し">' +
+      '<div class="lbl">カテゴリ</div><div class="catsel" id="rcat">' + state.cats.map(c => '<button class="c-' + esc(c.color) + '" data-cat="' + esc(c.id) + '" aria-pressed="' + (c.id === cat) + '">' + esc(c.name) + "</button>").join("") + "</div>" +
+      '<div class="lbl">繰り返し</div><div class="catsel" id="rtype"><button data-t="weekly" aria-pressed="true" class="c-gray">毎週</button><button data-t="monthly" aria-pressed="false" class="c-gray">毎月</button></div>' +
+      '<div id="rwk" style="margin-top:8px"><select id="rdow" aria-label="曜日">' + WD.map((w,i) => '<option value="' + i + '">' + w + "曜日</option>").join("") + '</select></div>' +
+      '<div id="rmo" style="margin-top:8px" hidden><select id="rday" aria-label="日">' + Array.from({length: 31}, (_,i) => '<option value="' + (i+1) + '">' + (i+1) + "日</option>").join("") + "</select></div>" +
+      '<div class="row"><button class="btn" id="r-cancel">閉じる</button><button class="btn pri" id="r-save">追加</button></div>');
+    $("rcat").onclick = e => { const b = e.target.closest("[data-cat]"); if (!b) return; cat = b.dataset.cat; $("rcat").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); };
+    $("rtype").onclick = e => { const b = e.target.closest("[data-t]"); if (!b) return; type = b.dataset.t; $("rtype").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("rwk").hidden = type !== "weekly"; $("rmo").hidden = type !== "monthly"; };
+    $("r-cancel").onclick = closeSheet;
+    $("r-save").onclick = async () => {
+      const n = $("rn").value.trim(); if (!n){ toast("名前を入力してください"); return; }
+      const it = itemByName(n);
+      const r = {name: n, cat: it ? it.cat : cat, type}; if (type === "weekly") r.dow = +$("rdow").value; else r.day = +$("rday").value;
+      try { await saveRec(state.rec.concat([r])); closeSheet(); toast("追加しました"); } catch(err){ toast(errMsg(err)); }
+    };
+  };
+
+  // ---------- settings: holidays ----------
+  $("hlist").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-hdel]"); if (!b || !state.db) return;
+    try { await saveHolidays(state.holidays.filter(h => h.date !== b.dataset.hdel)); toast("削除しました"); } catch(err){ toast(errMsg(err)); }
+  });
+  $("btn-addh").onclick = () => {
+    if (!state.db) return;
+    openSheet('<div class="sh-head"><h3 id="sh-title">祝日を追加</h3></div>' +
+      '<div class="lbl"><label for="hd">日付</label></div><input type="date" id="hd">' +
+      '<div class="lbl"><label for="hn">名称</label></div><input type="text" id="hn" placeholder="例:元日">' +
+      '<div class="row"><button class="btn" id="h-cancel">閉じる</button><button class="btn pri" id="h-save">追加</button></div>');
+    $("h-cancel").onclick = closeSheet;
+    $("h-save").onclick = async () => {
+      const d = $("hd").value, n = $("hn").value.trim(); if (!d){ toast("日付を選んでください"); return; }
+      const l = state.holidays.filter(h => h.date !== d); l.push({date: d, name: n || "祝日"}); l.sort((a,b) => a.date < b.date ? -1 : 1);
+      try { await saveHolidays(l); closeSheet(); toast("追加しました"); } catch(err){ toast(errMsg(err)); }
+    };
+  };
+
+  // ---------- navigation ----------
+  function moveMonth(delta){
+    let m = state.m + delta, y = state.y; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; }
+    state.y = y; state.m = m;
+    const g = $("grid"); g.classList.add("fade"); renderCal();
+    requestAnimationFrame(() => requestAnimationFrame(() => g.classList.remove("fade")));
+  }
+  $("btn-prev").onclick = () => moveMonth(-1);
+  $("btn-next").onclick = () => moveMonth(1);
+  $("btn-today").onclick = () => { state.y = now.getFullYear(); state.m = now.getMonth()+1; renderCal(); };
+  const swipe = {x: 0, y: 0, moved: false};
+  $("grid").addEventListener("click", e => { const c = e.target.closest(".cell"); if (!c || !c.dataset.k || swipe.moved) return; openDay(c.dataset.k); });
+  $("cal").addEventListener("touchstart", e => { const t = e.touches[0]; swipe.x = t.clientX; swipe.y = t.clientY; swipe.moved = false; }, {passive: true});
+  $("cal").addEventListener("touchend", e => {
+    const t = e.changedTouches[0]; const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){ swipe.moved = true; moveMonth(dx < 0 ? 1 : -1); setTimeout(() => { swipe.moved = false; }, 350); }
+  }, {passive: true});
+  function setView(v){
+    state.view = v; $("view-cal").hidden = v !== "cal"; $("view-set").hidden = v !== "set";
+    const b = $("btn-view"); b.textContent = v === "cal" ? "⚙" : "✕"; b.setAttribute("aria-label", v === "cal" ? "設定" : "カレンダーに戻る");
+    render();
+  }
+  $("btn-view").onclick = () => setView(state.view === "cal" ? "set" : "cal");
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("sheet").hidden) closeSheet();
+    if ($("sheet").hidden && state.view === "cal" && !/INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || "")){
+      if (e.key === "ArrowLeft") moveMonth(-1); if (e.key === "ArrowRight") moveMonth(1);
+    }
+  });
+
+  // ---------- local store (このスマホの中に保存) ----------
+  const STORE_KEY = "myschedule.v1";
+  const DEFAULTS = {"categories": {"items": [{"id": "work", "name": "業務", "color": "sky"}, {"id": "private", "name": "プライベート", "color": "blue"}]}, "holidays": {"items": [{"date": "2026-01-01", "name": "元日"}, {"date": "2026-01-12", "name": "成人の日"}, {"date": "2026-02-11", "name": "建国記念の日"}, {"date": "2026-02-23", "name": "天皇誕生日"}, {"date": "2026-03-20", "name": "春分の日"}, {"date": "2026-04-29", "name": "昭和の日"}, {"date": "2026-05-03", "name": "憲法記念日"}, {"date": "2026-05-04", "name": "みどりの日"}, {"date": "2026-05-05", "name": "こどもの日"}, {"date": "2026-05-06", "name": "振替休日"}, {"date": "2026-07-20", "name": "海の日"}, {"date": "2026-08-11", "name": "山の日"}, {"date": "2026-09-21", "name": "敬老の日"}, {"date": "2026-09-22", "name": "国民の休日"}, {"date": "2026-09-23", "name": "秋分の日"}, {"date": "2026-10-12", "name": "スポーツの日"}, {"date": "2026-11-03", "name": "文化の日"}, {"date": "2026-11-23", "name": "勤労感謝の日"}, {"date": "2027-01-01", "name": "元日"}, {"date": "2027-01-11", "name": "成人の日"}, {"date": "2027-02-11", "name": "建国記念の日"}, {"date": "2027-02-23", "name": "天皇誕生日"}, {"date": "2027-03-21", "name": "春分の日"}, {"date": "2027-03-22", "name": "振替休日"}, {"date": "2027-04-29", "name": "昭和の日"}, {"date": "2027-05-03", "name": "憲法記念日"}, {"date": "2027-05-04", "name": "みどりの日"}, {"date": "2027-05-05", "name": "こどもの日"}, {"date": "2027-07-19", "name": "海の日"}, {"date": "2027-08-11", "name": "山の日"}, {"date": "2027-09-20", "name": "敬老の日"}, {"date": "2027-09-23", "name": "秋分の日"}, {"date": "2027-10-11", "name": "スポーツの日"}, {"date": "2027-11-03", "name": "文化の日"}, {"date": "2027-11-23", "name": "勤労感謝の日"}]}, "items": {"items": [{"name": "休", "cat": "private", "bold": false, "fill": true, "color": "pink"}, {"name": "洗濯", "cat": "private", "bold": false, "color": "sage"}]}, "recurring": {"items": []}};
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  function loadStore(){
+    try { const v = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (v && v.days && v.config) return v; } catch(_){}
+    return null;
+  }
+  let store = loadStore();
+  let storageOk = true;
+  function persist(){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+    catch(e){ storageOk = false; throw {code: e && e.name === "QuotaExceededError" ? "quota_exceeded" : "unavailable"}; }
+  }
+  if (!store){ store = {days: {}, config: clone(DEFAULTS)}; try { persist(); } catch(_){} }
+  const listeners = {days: [], doc: {}};
+  const snapDoc = (id, d) => ({id, exists: !!d, data: () => d});
+  function emitDays(){ const docs = Object.keys(store.days).sort().map(id => snapDoc(id, store.days[id])); listeners.days.forEach(f => f({docs})); }
+  function emitDoc(path){ const id = path.split("/")[1]; (listeners.doc[path] || []).forEach(f => f(snapDoc(id, store.config[id]))); }
+  function emitAll(){ emitDays(); Object.keys(listeners.doc).forEach(emitDoc); }
+  const localDb = {
+    collection(){ return {onSnapshot(cb){ listeners.days.push(cb); setTimeout(emitDays); return () => {}; }}; },
+    doc(path){
+      const [col, id] = path.split("/");
+      const bucket = () => col === "days" ? store.days : store.config;
+      return {
+        onSnapshot(cb){ (listeners.doc[path] = listeners.doc[path] || []).push(cb); setTimeout(() => emitDoc(path)); return () => {}; },
+        async set(data){ bucket()[id] = clone(data); persist(); col === "days" ? emitDays() : emitDoc(path); },
+        async delete(){ delete bucket()[id]; persist(); col === "days" ? emitDays() : emitDoc(path); },
+      };
+    },
+  };
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(_){}
+
+  // ---------- backup ----------
+  function backupData(){ return {app: "my-schedule", version: 1, exportedAt: new Date().toISOString(), days: store.days, config: store.config}; }
+  $("btn-export").onclick = async () => {
+    const d = new Date(); const name = "my-schedule-" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".json";
+    const text = JSON.stringify(backupData(), null, 1);
+    const blob = new Blob([text], {type: "application/json"});
+    try {
+      const file = new File([blob], name, {type: "application/json"});
+      if (navigator.canShare && navigator.canShare({files: [file]})){ await navigator.share({files: [file], title: name}); return; }
+    } catch(e){ if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast("書き出しました");
+  };
+  $("btn-import").onclick = () => $("imp-file").click();
+  $("imp-file").onchange = async (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch(_){ toast("ファイルを読み込めませんでした"); return; }
+    if (!data || typeof data.days !== "object" || typeof data.config !== "object"){ toast("このアプリのバックアップファイルではありません"); return; }
+    const n = Object.keys(data.days).length;
+    $("impconf").innerHTML = '<div class="confirm">今の予定を、バックアップの内容(' + n + ' 日分)で置き換えます。<div class="row" style="margin-top:8px"><button class="btn" id="ip-no">やめる</button><button class="btn pri" id="ip-yes">置き換える</button></div></div>';
+    $("ip-no").onclick = () => { $("impconf").innerHTML = ""; };
+    $("ip-yes").onclick = () => {
+      const prev = store; store = {days: clone(data.days), config: Object.assign(clone(DEFAULTS), clone(data.config))};
+      try { persist(); } catch(err){ store = prev; toast(errMsg(err)); return; }
+      $("impconf").innerHTML = ""; emitAll(); toast(n + " 日分を読み込みました");
+    };
+  };
+
+  // ---------- connect ----------
+  render();
+  if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); }); }
+  (async () => {
+    const db = localDb;
+    state.db = db;
+    if (!storageOk){ const bn = $("banner"); bn.hidden = false; bn.textContent = "このブラウザでは予定を保存できません。プライベートブラウズをオフにしてください。"; }
+    const seen = new Set(); const done = (n) => { seen.add(n); if (seen.size >= 5) state.ready = true; render(); if (sheetDay) drawDay(); };
+    const onErr = () => { const bn = $("banner"); bn.hidden = false; bn.textContent = "データを読み込めませんでした。ページを開き直してください。"; };
+    const arr = (s) => { const v = s.exists ? (s.data() || {}) : {}; return Array.isArray(v.items) ? v.items : []; };
+    db.collection("days").onSnapshot(snap => {
+      const m = {}, sk = {}; snap.docs.forEach(d => { const v = d.data() || {}; if (Array.isArray(v.events)) m[d.id] = sortEvs(v.events.map(cleanEv).filter(e => e.name)); if (Array.isArray(v.skip) && v.skip.length) sk[d.id] = v.skip.map(String); });
+      state.days = m; state.skips = sk; done("days");
+    }, onErr);
+    db.doc("config/categories").onSnapshot(s => { state.cats = arr(s).map(c => { const r = {id: String(c.id), name: String(c.name || ""), color: String(c.color || "gray")}; if (c.fill) r.fill = true; return r; }); done("cats"); }, onErr);
+    db.doc("config/items").onSnapshot(s => { state.items = arr(s).map(x => { const r = {name: String(x.name || ""), cat: String(x.cat || ""), bold: !!x.bold}; if (x.fill) r.fill = true; if (x.color) r.color = String(x.color); return r; }); done("items"); }, onErr);
+    db.doc("config/recurring").onSnapshot(s => { state.rec = arr(s).map(x => { const r = {name: String(x.name || ""), cat: String(x.cat || ""), type: x.type === "monthly" ? "monthly" : "weekly"}; if (r.type === "weekly") r.dow = +x.dow || 0; else r.day = +x.day || 1; return r; }).filter(r => r.name); done("rec"); }, onErr);
+    db.doc("config/holidays").onSnapshot(s => { state.holidays = arr(s).map(x => ({date: String(x.date || ""), name: String(x.name || "")})); done("hol"); }, onErr);
+  })();
+})();
+</script>
+</body>
+</html>
