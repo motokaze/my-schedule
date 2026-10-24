@@ -201,10 +201,23 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 .banner{background:var(--orange-bg);color:var(--orange-fg);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
 @media (min-width:600px){.cell{min-height:100px;padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
 /* スマホ: 画面の高さいっぱいにカレンダーを縦に伸ばす(上部のヘッダー等の約170pxを引いて週の数で割る) */
-@media (max-width:599px){.cell{min-height:max(96px, calc((100dvh - 100px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) / var(--rows,6)))}}
+/* スマホ: カレンダーを画面の横幅いっぱい・縦はスクロールなしで全週を表示 */
+@media (max-width:599px){
+  body.calmode{overflow:hidden}
+  body.calmode .wrap{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;padding-block:6px 0;padding-left:0;padding-right:0}
+  body.calmode .top,body.calmode .monthbar,body.calmode #banner{margin-left:max(12px,env(safe-area-inset-left,0px));margin-right:max(12px,env(safe-area-inset-right,0px))}
+  body.calmode .top{padding:2px 0 6px}
+  body.calmode .monthbar{padding:0 0 8px}
+  body.calmode #view-cal{flex:1;display:flex;flex-direction:column;min-height:0}
+  body.calmode .cal{flex:1;display:flex;flex-direction:column;min-height:0;border-radius:0;border-left:0;border-right:0;border-bottom:0}
+  body.calmode .grid{flex:1;min-height:0;grid-template-rows:repeat(var(--rows,6),minmax(0,1fr))}
+  body.calmode .cell{min-height:0;overflow:hidden}
+  body.calmode .cell:nth-child(7n+1){padding-left:max(2px,env(safe-area-inset-left,0px))}
+  body.calmode .cell:nth-child(7n){padding-right:max(2px,env(safe-area-inset-right,0px))}
+}
 </style>
 </head>
-<body>
+<body class="calmode">
 <div class="wrap">
   <div class="top">
     <div class="brand">マイスケジュール</div>
@@ -694,6 +707,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){ swipe.moved = true; moveMonth(dx < 0 ? 1 : -1); setTimeout(() => { swipe.moved = false; }, 350); }
   }, {passive: true});
   function setView(v){
+    document.body.classList.toggle("calmode", v === "cal");
     state.view = v; $("view-cal").hidden = v !== "cal"; $("view-set").hidden = v !== "set";
     const b = $("btn-view"); b.textContent = v === "cal" ? "⚙" : "✕"; b.setAttribute("aria-label", v === "cal" ? "設定" : "カレンダーに戻る");
     render();
