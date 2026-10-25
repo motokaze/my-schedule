@@ -91,7 +91,7 @@ button{font:inherit;color:inherit}
 .wk-sec h2{font-size:14px;margin:0 0 8px 2px;letter-spacing:.06em}
 .wk-sec.must h2{color:var(--pink-fg)}
 .wk-sec.can h2{color:var(--sky-fg)}
-.wk-row{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:6px;border-radius:10px;padding:4px 6px 4px 2px;margin-bottom:6px;transition:background-color .15s}
+.wk-row{display:grid;grid-template-columns:36px 1fr auto 30px;align-items:center;gap:6px;border-radius:10px;padding:4px 6px 4px 2px;margin-bottom:6px;transition:background-color .15s}
 .wk-sec.must .wk-row{background:var(--pink-bg)}
 .wk-sec.can .wk-row{background:var(--sky-bg)}
 .wk-sec .wk-row.sent{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
@@ -103,6 +103,9 @@ button{font:inherit;color:inherit}
 .wk-row input[type=text]:focus{background:var(--surface);outline:2px solid var(--sat);outline-offset:0}
 .wk-row .tmr{height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .wk-row .tmr:disabled{opacity:.35;cursor:default}
+.wk-row .rdel{width:30px;height:34px;border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;border-radius:8px;padding:0}
+.wk-row .rdel:active{background:rgba(0,0,0,.08)}
+.toast button{margin-left:12px;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
 .wk-add{width:100%;height:40px;border-radius:10px;border:1px dashed var(--line);background:transparent;color:var(--muted);font-weight:700;cursor:pointer}
 .wk-note{font-size:12px;color:var(--muted);padding:0 4px 16px}
 
@@ -241,7 +244,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 .sync-status{font-size:13px;color:var(--muted)}
 .sync-status.ok{color:var(--fg)}
 .sync-status.err{color:var(--danger)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);white-space:nowrap;bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow)}
 .banner{background:var(--orange-bg);color:var(--orange-fg);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
 @media (min-width:600px){.cell{padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
 /* スマホ: カレンダーを画面の横幅いっぱい・高さいっぱいに。週は上下にスクロールでき、月をまたいでつながる(1画面に5週) */
@@ -374,7 +377,12 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
   };
 
   // ---------- helpers ----------
-  function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 1800); }
+  function toast(msg, action, onAction){
+    const t = $("toast"); t.textContent = msg;
+    // 「元に戻す」などのボタンつき(押せるように少し長めに表示)
+    if (action){ const b = document.createElement("button"); b.textContent = action; b.onclick = () => { t.hidden = true; onAction(); }; t.appendChild(b); }
+    t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, action ? 5000 : 1800);
+  }
   const holidayName = (k) => { const h = state.holidays.find(x => x.date === k); return h ? h.name : ""; };
   const catById = (id) => state.cats.find(c => c.id === id);
   const itemByName = (n) => state.items.find(i => i.name === n);
@@ -960,7 +968,8 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       '<div class="wk-row' + (r.d ? " done" : "") + (r.s ? " sent" : "") + '" data-sec="' + id + '" data-i="' + i + '">' +
       '<label class="ck"><input type="checkbox" data-ck' + (r.d ? " checked" : "") + ' aria-label="' + title + " " + (i+1) + '行目を済みにする"></label>' +
       '<input type="text" data-tx value="' + esc(r.t) + '" aria-label="' + title + " " + (i+1) + '行目" enterkeyhint="done" autocomplete="off">' +
-      '<button class="tmr" data-tm' + (r.t.trim() ? "" : " disabled") + ' aria-label="明日のマストに移す">明日</button></div>').join("") +
+      '<button class="tmr" data-tm' + (r.t.trim() ? "" : " disabled") + ' aria-label="明日のマストに移す">明日</button>' +
+      '<button class="rdel" data-del aria-label="' + title + " " + (i+1) + '行目を削除">×</button></div>').join("") +
       '<button class="wk-add" data-add="' + id + '">＋ 行を追加</button></div>';
     $("wk-body").innerHTML = sec("must", "マスト") + sec("can", "できたら");
   }
@@ -985,6 +994,23 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       const sec = add.dataset.add; wkFlush();
       wk.extra[wk.date + sec] = $("wk-body").querySelectorAll('.wk-row[data-sec="' + sec + '"]').length + 1; renderWork(true);
       const rows = $("wk-body").querySelectorAll('.wk-row[data-sec="' + sec + '"] [data-tx]'); rows[rows.length - 1].focus();
+      return;
+    }
+    const del = e.target.closest("[data-del]");
+    if (del){
+      // 行を削除(5秒間は「元に戻す」で戻せる)
+      const row = del.closest(".wk-row"), sec = row.dataset.sec, i = +row.dataset.i, date = wk.date;
+      wkFlush();
+      const list = wkRows(date, sec); const removed = list.splice(i, 1)[0];
+      wkSave(date, sec, list);
+      const ek = date + sec; if (wk.extra[ek]) wk.extra[ek] = Math.max(0, wk.extra[ek] - 1);
+      renderWork(true);
+      toast("行を削除しました", "元に戻す", () => {
+        wkFlush();
+        const cur = wkRows(date, sec); cur.splice(Math.min(i, cur.length), 0, removed);
+        wkSave(date, sec, cur);
+        if (wk.date === date) renderWork(true);
+      });
       return;
     }
     const tm = e.target.closest("[data-tm]");
