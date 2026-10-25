@@ -13,6 +13,10 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>マイスケジュール</title>
+<script>
+// 表示モード(自動/ライト/ダーク)は、このスマホごとに覚える。画面が出る前に反映してチラつきを防ぐ
+try { var t = localStorage.getItem("myschedule.theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+</script>
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{-webkit-text-size-adjust:100%}
@@ -41,7 +45,7 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#10151D; --surface:#18202B; --fg:#E6ECF2; --muted:#93A0AE; --line:#2A3443;
-  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#141A22; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
+  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#0B0F15; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
   --sun:#FF7B6E; --sat:#7EB2F2; --today:#B9CCE6; --danger:#FF8A80;
   --shadow:0 10px 30px rgba(0,0,0,.5);
   --sky-bg:#123F52; --sky-fg:#A9E4FA; --blue-bg:#3D74DB; --blue-fg:#FFFFFF;
@@ -50,7 +54,7 @@ img{max-width:100%}
   --gray-bg:#2C3541; --gray-fg:#C8D1DB; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#10151D; --surface:#18202B; --fg:#E6ECF2; --muted:#93A0AE; --line:#2A3443;
-  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#141A22; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
+  --navy:#2C3D55; --on-navy:#FFFFFF; --dim:#0B0F15; --dim-fg:#4D5966; --workday:#232B35; --ghost:#66727F;
   --sun:#FF7B6E; --sat:#7EB2F2; --today:#B9CCE6; --danger:#FF8A80;
   --shadow:0 10px 30px rgba(0,0,0,.5);
   --sky-bg:#123F52; --sky-fg:#A9E4FA; --blue-bg:#3D74DB; --blue-fg:#FFFFFF;
@@ -93,11 +97,14 @@ button{font:inherit;color:inherit}
 .dow div{background:var(--navy);color:var(--on-navy);text-align:center;font-size:12px;font-weight:700;padding:7px 0;letter-spacing:.08em}
 .dow div:first-child{color:#FFB3AB}
 .dow div:last-child{color:#AFCBF2}
-.grid{transition:opacity .18s ease}
-.grid.fade{opacity:.25}
-.cell{min-height:84px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 2px 5px;display:flex;flex-direction:column;gap:2px;background:var(--surface);cursor:pointer;text-align:left;min-width:0}
+.grid{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;grid-auto-rows:var(--rowh,110px);height:calc(100dvh - 190px);scrollbar-width:none}
+.grid::-webkit-scrollbar{display:none}
+.cell{min-height:0;overflow:hidden;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 2px 5px;display:flex;flex-direction:column;gap:2px;background:var(--surface);cursor:pointer;text-align:left;min-width:0}
 .cell:nth-child(7n){border-right:0}
-.cell.out{background:var(--dim)}
+.cell.out{background:var(--dim)!important}
+.cell.out .chip{background:transparent!important;color:var(--ghost)!important;font-weight:400;padding:1px 3px}
+.chip.fillonly{display:none}
+.cell.out .chip.fillonly{display:block}
 .cell.out .d{color:var(--ghost)!important}
 .cell.out .hn{color:var(--ghost)}
 .chip.ghost{background:transparent;color:var(--ghost);font-weight:400;padding:1px 3px}
@@ -119,6 +126,8 @@ button{font:inherit;color:inherit}
 .times span{color:var(--muted)}
 input[type=time]{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
 .tedit{display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px;align-items:center;margin-top:6px;width:100%}
+.tedit input[type=text]{grid-column:1/-1;font-weight:400}
+.tedit .tl{grid-column:1/-1;font-size:11px;opacity:.8;font-weight:400;margin-top:2px}
 .curev{flex-wrap:wrap}
 .curev .tag{font-size:11px;border:1px solid currentColor;border-radius:999px;padding:0 6px;opacity:.75;flex:none}
 .curev.skipped{opacity:.45}
@@ -145,7 +154,7 @@ input[type=time]{width:100%;font:inherit;font-size:16px;color:var(--fg);backgrou
 .scrim{position:fixed;inset:0;background:rgba(10,16,24,.45);z-index:40}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:var(--shadow);max-height:88vh;overflow:auto;padding-top:10px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));animation:up .2s ease}
 @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.sheet{animation:none}.grid{transition:none}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
 .grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 12px}
 .sheet-in{max-width:640px;margin:0 auto}
 .sh-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
@@ -163,6 +172,10 @@ input[type=time]{width:100%;font:inherit;font-size:16px;color:var(--fg);backgrou
 .qbtn[disabled]{opacity:.35;cursor:default}
 .free{display:grid;grid-template-columns:1fr auto;gap:8px}
 .catsel{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px}
+.seg button{height:38px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.seg-note{font-size:12px;color:var(--muted);padding:8px 2px 2px}
 .catsel button{border:1.5px solid transparent;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
 .catsel button[aria-pressed="true"]{border-color:var(--fg)}
 textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -199,9 +212,8 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 .sync-status.err{color:var(--danger)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow)}
 .banner{background:var(--orange-bg);color:var(--orange-fg);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
-@media (min-width:600px){.cell{min-height:100px;padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
-/* スマホ: 画面の高さいっぱいにカレンダーを縦に伸ばす(上部のヘッダー等の約170pxを引いて週の数で割る) */
-/* スマホ: カレンダーを画面の横幅いっぱい・縦はスクロールなしで全週を表示 */
+@media (min-width:600px){.cell{padding:6px 4px}.chip{font-size:12px}.d{font-size:14px}}
+/* スマホ: カレンダーを画面の横幅いっぱい・高さいっぱいに。週は上下にスクロールでき、月をまたいでつながる(1画面に5週) */
 @media (max-width:599px){
   body.calmode{overflow:hidden}
   body.calmode .wrap{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;padding-block:6px 0;padding-left:0;padding-right:0}
@@ -210,8 +222,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
   body.calmode .monthbar{padding:0 0 8px}
   body.calmode #view-cal{flex:1;display:flex;flex-direction:column;min-height:0}
   body.calmode .cal{flex:1;display:flex;flex-direction:column;min-height:0;border-radius:0;border-left:0;border-right:0;border-bottom:0}
-  body.calmode .grid{flex:1;min-height:0;grid-template-rows:repeat(var(--rows,6),minmax(0,1fr))}
-  body.calmode .cell{min-height:0;overflow:hidden}
+  body.calmode .grid{flex:1;min-height:0;height:auto}
   body.calmode .cell:nth-child(7n+1){padding-left:max(2px,env(safe-area-inset-left,0px))}
   body.calmode .cell:nth-child(7n){padding-right:max(2px,env(safe-area-inset-right,0px))}
 }
@@ -241,6 +252,15 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 
   <section id="view-set" hidden>
     <div class="sec" style="margin-top:4px">
+      <h2>表示</h2>
+      <div class="card" style="padding:12px">
+        <div class="seg" id="theme-seg" role="group" aria-label="表示モード">
+          <button data-theme-v="auto">自動</button><button data-theme-v="light">ライト</button><button data-theme-v="dark">ダーク</button>
+        </div>
+        <div class="seg-note">自動は iPhone の設定(ライト/ダーク)に合わせます。この設定はスマホごとに保存されます。</div>
+      </div>
+    </div>
+    <div class="sec">
       <h2>カテゴリ</h2>
       <div class="card" id="clist"></div>
       <button class="addbtn" id="btn-addc">＋ カテゴリを追加</button>
@@ -357,45 +377,90 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 
   // ---------- render ----------
   function catFill(ev){ const it = itemByName(ev.name); const c = catById(it ? it.cat : ev.cat) || catById(ev.cat); return !!(c && c.fill); }
-  function renderCal(){
-    const y = state.y, m = state.m;
-    $("mtitle").innerHTML = "<small>" + y + "年</small>" + m + "月";
-    const first = new Date(y, m-1, 1);
-    const lead = first.getDay();
-    const last = new Date(y, m, 0).getDate();
-    const total = Math.ceil((lead + last) / 7) * 7;
+  // カレンダーは週を縦に並べた1本の帯。上下にスクロールでき、月をまたいでつながる
+  const cal = { r0: null, nw: 0, rowh: 0, lock: 0 };
+  const ROWS_PER_SCREEN = 5;
+  const ymOf = (y, m) => y + "-" + String(m).padStart(2, "0");
+  const sunOf = (y, m, d) => { const t = new Date(y, m-1, d); return new Date(y, m-1, d - t.getDay()); };
+  const weekIndex = (y, m, d) => Math.round((sunOf(y, m, d) - cal.r0) / 6048e5);
+  function ensureRange(y, m){
+    // 表示している月の前12か月〜後24か月分の週を用意(はみ出たら広げる)
+    const s0 = sunOf(y, m - 12, 1), e0 = sunOf(y, m + 25, 1);
+    if (!cal.r0){ cal.r0 = s0; cal.nw = Math.round((e0 - s0) / 6048e5); return 0; }
+    let added = 0;
+    if (s0 < cal.r0){ added = Math.round((cal.r0 - s0) / 6048e5); cal.r0 = s0; cal.nw += added; }
+    const end = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + cal.nw * 7);
+    if (e0 > end) cal.nw += Math.round((e0 - end) / 6048e5);
+    return added;
+  }
+  function cellHtml(dt){
+    const dy = dt.getFullYear(), dm = dt.getMonth()+1, day = dt.getDate();
+    const k = key(dy, dm, day);
+    const all = allEvs(k);
+    const recl = all.filter(ev => ev.rec).map(ev => "＜" + esc(ev.name) + "＞").join("");
+    const evs = all.filter(ev => !ev.rec);
+    const hn = holidayName(k);
+    const dcls = "d" + (hn ? " holi" : dt.getDay() === 0 ? " sun" : dt.getDay() === 6 ? " sat" : "");
+    let cls = "cell" + (ymOf(dy, dm) === ymOf(state.y, state.m) ? "" : " out"), style = "";
+    // 塗りつぶし: 予定ごとの塗り(休など) > 塗りありカテゴリ。ほかの月の日はグレー(CSSで切り替え)
+    const fillEv = evs.find(ev => evStyle(ev).fill);
+    if (fillEv) style = ' style="background:var(--' + evStyle(fillEv).cls.slice(2) + '-bg)"';
+    else if (evs.some(catFill)) cls += " workday";
+    const vis = evs.filter(ev => !evStyle(ev).fill);
+    const chip = (ev, extra) => { const s = evStyle(ev); return '<span class="chip ' + s.cls + (s.bold ? " b" : "") + (extra || "") + '">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>"; };
+    let chips = (fillEv ? chip(fillEv, " fillonly") : "") + vis.slice(0,3).map(ev => chip(ev)).join("");
+    if (vis.length > 3) chips += '<span class="more">+' + (vis.length - 3) + "</span>";
+    if (k === todayKey) cls += " today";
+    const label = dm + "月" + day + "日" + (all.length ? " " + all.map(e => (e.start ? e.start + " " : "") + e.name).join("、") : "");
+    return '<button class="' + cls + '" data-k="' + k + '" data-ym="' + ymOf(dy, dm) + '"' + style + ' aria-label="' + esc(label) + '">' +
+      '<span class="' + dcls + '"><span class="num">' + (day === 1 ? dm + "/1" : day) + "</span>" + (recl ? '<span class="rl">' + recl + "</span>" : "") + "</span>" + (hn ? '<span class="hn">' + esc(hn) + "</span>" : "") + chips + "</button>";
+  }
+  function setTitle(){ $("mtitle").innerHTML = "<small>" + state.y + "年</small>" + state.m + "月"; }
+  function measure(){
+    const g = $("grid"); const h = g.clientHeight;
+    if (h > 0){ cal.rowh = Math.max(64, Math.floor(h / ROWS_PER_SCREEN)); g.style.setProperty("--rowh", cal.rowh + "px"); }
+    return cal.rowh;
+  }
+  function renderCal(opts){
+    opts = opts || {};
+    const g = $("grid");
+    // いま見ている位置(何週目のどこか)を覚えておき、描き直したあとも同じ位置に戻す
+    const keepTop = cal.r0 && cal.rowh ? g.scrollTop : null;
+    const added = ensureRange(state.y, state.m);
+    setTitle();
     let html = "";
-    for (let i = 0; i < total; i++){
-      const dt = new Date(y, m-1, i - lead + 1);
-      const dy = dt.getFullYear(), dm = dt.getMonth()+1, day = dt.getDate();
-      const out = dm !== m;
-      const k = key(dy, dm, day);
-      const all = allEvs(k);
-      const recl = all.filter(ev => ev.rec).map(ev => "＜" + esc(ev.name) + "＞").join("");
-      const evs = all.filter(ev => !ev.rec);
-      const hn = holidayName(k);
-      const dcls = "d" + (hn ? " holi" : dt.getDay() === 0 ? " sun" : dt.getDay() === 6 ? " sat" : "");
-      let cls = "cell" + (out ? " out" : ""), style = "", chips;
-      if (out){
-        // 前後の月の日はグレーの文字だけで予定を表示
-        chips = evs.slice(0,3).map(ev => '<span class="chip ghost">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>").join("");
-        if (evs.length > 3) chips += '<span class="more">+' + (evs.length - 3) + "</span>";
-      } else {
-        // 塗りつぶし: 予定ごとの塗り(休など) > 塗りありカテゴリ
-        const fillEv = evs.find(ev => evStyle(ev).fill);
-        if (fillEv) style = ' style="background:var(--' + evStyle(fillEv).cls.slice(2) + '-bg)"';
-        else if (evs.some(catFill)) cls += " workday";
-        const vis = evs.filter(ev => !evStyle(ev).fill);
-        chips = vis.slice(0,3).map(ev => { const s = evStyle(ev); return '<span class="chip ' + s.cls + (s.bold ? " b" : "") + '">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>"; }).join("");
-        if (vis.length > 3) chips += '<span class="more">+' + (vis.length - 3) + "</span>";
-      }
-      if (k === todayKey) cls += " today";
-      const label = dm + "月" + day + "日" + (all.length ? " " + all.map(e => (e.start ? e.start + " " : "") + e.name).join("、") : "");
-      html += '<button class="' + cls + '" data-k="' + k + '"' + style + ' aria-label="' + esc(label) + '">' +
-        '<span class="' + dcls + '"><span class="num">' + day + "</span>" + (recl ? '<span class="rl">' + recl + "</span>" : "") + "</span>" + (hn ? '<span class="hn">' + esc(hn) + "</span>" : "") + chips + "</button>";
+    for (let i = 0; i < cal.nw * 7; i++) html += cellHtml(new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + i));
+    g.innerHTML = html;
+    const old = cal.rowh; measure();
+    if (opts.toMonth || keepTop === null || !cal.rowh) scrollToMonth(state.y, state.m, false);
+    else g.scrollTop = (keepTop / (old || cal.rowh) + added) * cal.rowh;
+  }
+  function scrollToMonth(y, m, smooth){
+    const g = $("grid"); if (!measure()) return;
+    const top = weekIndex(y, m, 1) * cal.rowh;
+    cal.lock = Date.now() + (smooth ? 700 : 100);
+    if (smooth && g.scrollTo) g.scrollTo({top, behavior: "smooth"}); else g.scrollTop = top;
+  }
+  function setFocus(y, m){
+    if (y === state.y && m === state.m) return;
+    state.y = y; state.m = m; setTitle();
+    const cur = ymOf(y, m);
+    $("grid").querySelectorAll(".cell").forEach(c => c.classList.toggle("out", c.dataset.ym !== cur));
+  }
+  let scrollRaf = 0;
+  function onCalScroll(){
+    scrollRaf = 0;
+    const g = $("grid"); if (!cal.rowh || state.view !== "cal") return;
+    // 画面の真ん中にある週の木曜日の月を「いまの月」にする
+    const row = Math.floor((g.scrollTop + g.clientHeight / 2) / cal.rowh);
+    const th = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + row * 7 + 4);
+    if (Date.now() >= cal.lock) setFocus(th.getFullYear(), th.getMonth() + 1);
+    // 端に近づいたら前後の週を足す
+    if (g.scrollTop < cal.rowh * 6 || g.scrollTop + g.clientHeight > (cal.nw - 6) * cal.rowh){
+      const y = th.getFullYear(), m = th.getMonth() + 1;
+      const s0 = sunOf(y, m - 12, 1), end = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + cal.nw * 7);
+      if (s0 < cal.r0 || sunOf(y, m + 25, 1) > end){ state.y = y; state.m = m; renderCal(); }
     }
-    $("grid").innerHTML = html;
-    $("grid").style.setProperty("--rows", String(total / 7));
   }
   function renderSet(){
     $("clist").innerHTML = state.cats.length ? state.cats.map((c,i) =>
@@ -446,8 +511,8 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     const sk = state.skips[k] || [];
     const recHtml = recs.map(r => { const s = evStyle(r); const off = sk.includes(r.name);
       return '<div class="curev ' + s.cls + (s.bold ? " b" : "") + (off ? " skipped" : "") + '"><span class="tag">' + (r.rec === "weekly" ? "毎週" : "毎月") + "</span><span>" + esc(r.name) + '</span><button data-skip="' + esc(r.name) + '">' + (off ? "戻す" : "この日は消す") + "</button></div>"; }).join("");
-    const cur = recHtml + (evs.length || recs.length ? "" : '<div class="empty">予定はありません。下から追加してください。</div>') + (evs.length ? evs.map((ev,i) => { const s = evStyle(ev); return '<div class="curev ' + s.cls + (s.bold ? " b" : "") + '">' + (ev.start ? '<span class="tm">' + esc(timeText(ev)) + "</span>" : "") + "<span>" + esc(ev.name) + '</span><button data-tm="' + i + '">時刻</button><button data-rm="' + i + '" aria-label="' + esc(ev.name) + 'を削除">削除</button>' +
-        (editTime === i ? '<div class="tedit"><input type="time" id="te-s" aria-label="開始" value="' + esc(ev.start || "") + '"><span>〜</span><input type="time" id="te-e" aria-label="終了" value="' + esc(ev.end || "") + '"><button id="te-ok">保存</button></div>' : "") + "</div>"; }).join("") : "");
+    const cur = recHtml + (evs.length || recs.length ? "" : '<div class="empty">予定はありません。下から追加してください。</div>') + (evs.length ? evs.map((ev,i) => { const s = evStyle(ev); return '<div class="curev ' + s.cls + (s.bold ? " b" : "") + '">' + (ev.start ? '<span class="tm">' + esc(timeText(ev)) + "</span>" : "") + "<span>" + esc(ev.name) + '</span><button data-tm="' + i + '"' + (editTime === i ? ' aria-expanded="true"' : "") + '>編集</button><button data-rm="' + i + '" aria-label="' + esc(ev.name) + 'を削除">削除</button>' +
+        (editTime === i ? '<div class="tedit"><input type="text" id="te-n" aria-label="予定の名前" value="' + esc(ev.name) + '"><span class="tl">時刻(空にすると時刻なし)</span><input type="time" id="te-s" aria-label="開始" value="' + esc(ev.start || "") + '"><span>〜</span><input type="time" id="te-e" aria-label="終了" value="' + esc(ev.end || "") + '"><button id="te-ok">保存</button></div>' : "") + "</div>"; }).join("") : "");
     let quick = "";
     state.cats.forEach(c => {
       const its = state.items.filter(it => it.cat === c.id);
@@ -474,12 +539,18 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       const rm = e.target.closest("[data-rm]");
       if (rm){ editTime = null; changeDay(k, list => list.filter((_,i) => i !== +rm.dataset.rm), "削除しました"); return; }
       const tm = e.target.closest("[data-tm]");
-      if (tm){ editTime = editTime === +tm.dataset.tm ? null : +tm.dataset.tm; drawDay(); return; }
-      if (e.target.id === "te-ok"){
-        const i = editTime, s = $("te-s").value, en = $("te-e").value; editTime = null;
-        changeDay(k, list => list.map((ev,j) => { if (j !== i) return ev; const r = {name: ev.name, cat: ev.cat}; if (s) r.start = s; if (s && en) r.end = en; return r; }), "時刻を保存しました");
-      }
+      if (tm){ editTime = editTime === +tm.dataset.tm ? null : +tm.dataset.tm; drawDay(); if (editTime !== null && $("te-n")) $("te-n").focus(); return; }
+      if (e.target.id === "te-ok") saveEdit();
     };
+    // 予定の編集(名前・時刻)。新しい名前が「よく使う予定」と同じなら、その色・カテゴリにそろえる
+    function saveEdit(){
+      const i = editTime; if (i === null || !$("te-n")) return;
+      const n = $("te-n").value.trim(), s = $("te-s").value, en = $("te-e").value;
+      if (!n){ toast("予定の名前を入力してください"); return; }
+      editTime = null;
+      changeDay(k, list => list.map((ev,j) => { if (j !== i) return ev; const it = n !== ev.name ? itemByName(n) : null; const r = {name: n, cat: it ? it.cat : ev.cat}; if (s) r.start = s; if (s && en) r.end = en; return r; }), "保存しました");
+    }
+    if ($("te-n")) $("te-n").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); saveEdit(); } });
     const withTime = (ev) => { const s = $("ns").value, en = $("ne").value; if (s) ev.start = s; if (s && en) ev.end = en; $("ns").value = ""; $("ne").value = ""; return ev; };
     $("sheet-in").querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
       const it = itemByName(b.dataset.add); if (!it) return;
@@ -690,15 +761,21 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
   };
 
   // ---------- navigation ----------
+  function goMonth(y, m, smooth){
+    const prev = cal.r0; setFocus(y, m);
+    const end = cal.r0 && new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + cal.nw * 7);
+    if (!prev || sunOf(y, m - 1, 1) < cal.r0 || sunOf(y, m + 2, 1) > end){ renderCal({toMonth: true}); return; }
+    scrollToMonth(y, m, smooth);
+  }
   function moveMonth(delta){
     let m = state.m + delta, y = state.y; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; }
-    state.y = y; state.m = m;
-    const g = $("grid"); g.classList.add("fade"); renderCal();
-    requestAnimationFrame(() => requestAnimationFrame(() => g.classList.remove("fade")));
+    goMonth(y, m, true);
   }
   $("btn-prev").onclick = () => moveMonth(-1);
   $("btn-next").onclick = () => moveMonth(1);
-  $("btn-today").onclick = () => { state.y = now.getFullYear(); state.m = now.getMonth()+1; renderCal(); };
+  $("btn-today").onclick = () => goMonth(now.getFullYear(), now.getMonth()+1, true);
+  $("grid").addEventListener("scroll", () => { if (!scrollRaf) scrollRaf = requestAnimationFrame(onCalScroll); }, {passive: true});
+  window.addEventListener("resize", () => { if (state.view === "cal" && cal.r0) renderCal(); });
   const swipe = {x: 0, y: 0, moved: false};
   $("grid").addEventListener("click", e => { const c = e.target.closest(".cell"); if (!c || !c.dataset.k || swipe.moved) return; openDay(c.dataset.k); });
   $("cal").addEventListener("touchstart", e => { const t = e.touches[0]; swipe.x = t.clientX; swipe.y = t.clientY; swipe.moved = false; }, {passive: true});
@@ -710,8 +787,22 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     document.body.classList.toggle("calmode", v === "cal");
     state.view = v; $("view-cal").hidden = v !== "cal"; $("view-set").hidden = v !== "set";
     const b = $("btn-view"); b.textContent = v === "cal" ? "⚙" : "✕"; b.setAttribute("aria-label", v === "cal" ? "設定" : "カレンダーに戻る");
-    render();
+    if (v === "cal") renderCal({toMonth: true}); else render();
   }
+  // ---------- 表示モード ----------
+  const THEME_KEY = "myschedule.theme";
+  function getTheme(){ try { const t = localStorage.getItem(THEME_KEY); return t === "light" || t === "dark" ? t : "auto"; } catch(_){ return "auto"; } }
+  function applyTheme(t){
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+    $("theme-seg").querySelectorAll("[data-theme-v]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.themeV === t)));
+  }
+  $("theme-seg").onclick = e => {
+    const b = e.target.closest("[data-theme-v]"); if (!b) return;
+    const t = b.dataset.themeV;
+    try { if (t === "auto") localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, t); } catch(_){}
+    applyTheme(t);
+  };
+  applyTheme(getTheme());
   $("btn-view").onclick = () => setView(state.view === "cal" ? "set" : "cal");
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !$("sheet").hidden) closeSheet();
