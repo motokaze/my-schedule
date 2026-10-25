@@ -77,7 +77,34 @@ button{font:inherit;color:inherit}
 .monthbar h1{font-family:var(--f-display);font-weight:700;font-size:26px;margin:0;flex:1;letter-spacing:.02em;font-variant-numeric:tabular-nums}
 .monthbar h1 small{font-size:15px;color:var(--muted);margin-right:4px;font-weight:700}
 .iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;font-size:16px}
-.todaybtn{height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:13px}
+.titlebtn{font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:left;min-height:40px;display:inline-flex;align-items:baseline;-webkit-tap-highlight-color:transparent}
+.titlebtn:active{opacity:.6}
+.topbtns{display:flex;gap:8px;align-items:center}
+.workbtn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;cursor:pointer}
+.workbtn[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+/* 業務管理 */
+.wk-date{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:6px;padding:0 0 12px}
+.wk-date .iconbtn{width:44px;height:44px}
+.wk-date .titlebtn{justify-content:center;width:100%;font-family:var(--f-display);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.wk-date .titlebtn small{font-size:13px;color:var(--muted);margin-left:6px;font-weight:700}
+.wk-sec{border-radius:14px;padding:10px 10px 8px;margin-bottom:14px;border:1px solid var(--line);background:var(--surface)}
+.wk-sec h2{font-size:14px;margin:0 0 8px 2px;letter-spacing:.06em}
+.wk-sec.must h2{color:var(--pink-fg)}
+.wk-sec.can h2{color:var(--sky-fg)}
+.wk-row{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:6px;border-radius:10px;padding:4px 6px 4px 2px;margin-bottom:6px;transition:background-color .15s}
+.wk-sec.must .wk-row{background:var(--pink-bg)}
+.wk-sec.can .wk-row{background:var(--sky-bg)}
+.wk-sec .wk-row.sent{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.wk-sec .wk-row.done{background:var(--workday)}
+.wk-row.done input[type=text]{color:var(--muted)}
+.wk-row label.ck{display:grid;place-items:center;width:36px;height:40px;cursor:pointer}
+.wk-row input[type=checkbox]{width:22px;height:22px;margin:0;accent-color:var(--navy);cursor:pointer}
+.wk-row input[type=text]{border:0;background:transparent;padding:8px 4px;font-size:16px;border-radius:8px;min-width:0}
+.wk-row input[type=text]:focus{background:var(--surface);outline:2px solid var(--sat);outline-offset:0}
+.wk-row .tmr{height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.wk-row .tmr:disabled{opacity:.35;cursor:default}
+.wk-add{width:100%;height:40px;border-radius:10px;border:1px dashed var(--line);background:transparent;color:var(--muted);font-weight:700;cursor:pointer}
+.wk-note{font-size:12px;color:var(--muted);padding:0 4px 16px}
 
 /* colors */
 .c-sky{background:var(--sky-bg);color:var(--sky-fg)}
@@ -116,7 +143,7 @@ button{font:inherit;color:inherit}
 .d.sun,.d.holi{color:var(--sun)}
 .d.sat{color:var(--sat)}
 .hn{font-size:9px;color:var(--sun);line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-left:2px}
-.chip{display:block;font-size:10px;line-height:1.25;padding:2px 3px;border-radius:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chip{display:block;font-size:10px;line-height:1.15;padding:1px 3px;border-radius:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .chip.b{font-weight:700}
 .chip .nm{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .chip .t{display:block;font-size:8.5px;line-height:1.2;opacity:.85;font-weight:400;font-variant-numeric:tabular-nums;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -133,7 +160,11 @@ input[type=time]{width:100%;font:inherit;font-size:16px;color:var(--fg);backgrou
 .curev.skipped{opacity:.45}
 .curev.skipped span:not(.tag){text-decoration:line-through}
 .curev .tm{font-size:12px;font-variant-numeric:tabular-nums;opacity:.85;flex:none}
-.more{font-size:10px;color:var(--muted);padding-left:3px}
+.cell{position:relative}
+.cell>*{flex-shrink:0}
+@media (max-width:599px){.cell{gap:1px;padding-top:3px;padding-bottom:3px}.d .num{height:18px;min-width:18px}}
+/* 5件目からの「+n」は、マスの右下に小さな札で表示(予定が多くても必ず見える) */
+.more{position:absolute;right:2px;bottom:2px;font-size:10px;font-weight:700;line-height:1;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 5px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .hint{font-size:12px;color:var(--muted);padding:8px 4px 0}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);padding:8px 4px 0}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
@@ -232,22 +263,28 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
 <div class="wrap">
   <div class="top">
     <div class="brand">マイスケジュール</div>
-    <button class="iconbtn" id="btn-view" aria-label="設定">⚙</button>
+    <div class="topbtns"><button class="workbtn" id="btn-work" aria-pressed="false">業務</button><button class="iconbtn" id="btn-view" aria-label="設定">⚙</button></div>
   </div>
 
   <div id="banner" class="banner" hidden></div>
 
   <section id="view-cal">
     <div class="monthbar">
-      <h1 id="mtitle"><small>2026年</small>10月</h1>
-      <button class="todaybtn" id="btn-today">今月</button>
-      <button class="iconbtn" id="btn-prev" aria-label="前の月">◀</button>
-      <button class="iconbtn" id="btn-next" aria-label="次の月">▶</button>
+      <h1><button class="titlebtn" id="mtitle" title="タップで今日の月に戻る"><small>2026年</small>10月</button></h1>
     </div>
     <div class="cal" id="cal">
       <div class="dow"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
       <div class="grid" id="grid"></div>
     </div>
+  </section>
+
+  <section id="view-work" hidden>
+    <div class="wk-date">
+      <button class="iconbtn" id="wk-prev" aria-label="前の日">◀</button>
+      <button class="titlebtn" id="wk-title"></button>
+      <button class="iconbtn" id="wk-next" aria-label="次の日">▶</button>
+    </div>
+    <div id="wk-body"></div>
   </section>
 
   <section id="view-set" hidden>
@@ -380,12 +417,14 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
   // カレンダーは週を縦に並べた1本の帯。上下にスクロールでき、月をまたいでつながる
   const cal = { r0: null, nw: 0, rowh: 0, lock: 0 };
   const ROWS_PER_SCREEN = 5;
+  const MAX_CHIPS = 4; // 1日に表示する予定の数(5件目からは「+n」)
+  const BACK_MONTHS = 3, FWD_MONTHS = 7; // 用意しておく範囲(端に近づいたら自動で足す)
   const ymOf = (y, m) => y + "-" + String(m).padStart(2, "0");
   const sunOf = (y, m, d) => { const t = new Date(y, m-1, d); return new Date(y, m-1, d - t.getDay()); };
   const weekIndex = (y, m, d) => Math.round((sunOf(y, m, d) - cal.r0) / 6048e5);
   function ensureRange(y, m){
-    // 表示している月の前12か月〜後24か月分の週を用意(はみ出たら広げる)
-    const s0 = sunOf(y, m - 12, 1), e0 = sunOf(y, m + 25, 1);
+    // 表示している月の前3か月〜後6か月分の週を用意(はみ出たら広げる)
+    const s0 = sunOf(y, m - BACK_MONTHS, 1), e0 = sunOf(y, m + FWD_MONTHS, 1);
     if (!cal.r0){ cal.r0 = s0; cal.nw = Math.round((e0 - s0) / 6048e5); return 0; }
     let added = 0;
     if (s0 < cal.r0){ added = Math.round((cal.r0 - s0) / 6048e5); cal.r0 = s0; cal.nw += added; }
@@ -408,14 +447,14 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     else if (evs.some(catFill)) cls += " workday";
     const vis = evs.filter(ev => !evStyle(ev).fill);
     const chip = (ev, extra) => { const s = evStyle(ev); return '<span class="chip ' + s.cls + (s.bold ? " b" : "") + (extra || "") + '">' + '<span class="nm">' + esc(ev.name) + "</span>" + (ev.start ? '<span class="t">' + esc(timeText(ev)) + "</span>" : "") + "</span>"; };
-    let chips = (fillEv ? chip(fillEv, " fillonly") : "") + vis.slice(0,3).map(ev => chip(ev)).join("");
-    if (vis.length > 3) chips += '<span class="more">+' + (vis.length - 3) + "</span>";
+    let chips = (fillEv ? chip(fillEv, " fillonly") : "") + vis.slice(0, MAX_CHIPS).map(ev => chip(ev)).join("");
+    if (vis.length > MAX_CHIPS) chips += '<span class="more">+' + (vis.length - MAX_CHIPS) + "</span>";
     if (k === todayKey) cls += " today";
     const label = dm + "月" + day + "日" + (all.length ? " " + all.map(e => (e.start ? e.start + " " : "") + e.name).join("、") : "");
     return '<button class="' + cls + '" data-k="' + k + '" data-ym="' + ymOf(dy, dm) + '"' + style + ' aria-label="' + esc(label) + '">' +
       '<span class="' + dcls + '"><span class="num">' + (day === 1 ? dm + "/1" : day) + "</span>" + (recl ? '<span class="rl">' + recl + "</span>" : "") + "</span>" + (hn ? '<span class="hn">' + esc(hn) + "</span>" : "") + chips + "</button>";
   }
-  function setTitle(){ $("mtitle").innerHTML = "<small>" + state.y + "年</small>" + state.m + "月"; }
+  function setTitle(){ $("mtitle").innerHTML = "<small>" + state.y + "年</small>" + state.m + "月"; $("mtitle").setAttribute("aria-label", state.y + "年" + state.m + "月(タップで今日の月に戻る)"); }
   function measure(){
     const g = $("grid"); const h = g.clientHeight;
     if (h > 0){ cal.rowh = Math.max(64, Math.floor(h / ROWS_PER_SCREEN)); g.style.setProperty("--rowh", cal.rowh + "px"); }
@@ -426,14 +465,15 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     const g = $("grid");
     // いま見ている位置(何週目のどこか)を覚えておき、描き直したあとも同じ位置に戻す
     const keepTop = cal.r0 && cal.rowh ? g.scrollTop : null;
-    const added = ensureRange(state.y, state.m);
+    // 端に近づいて足すときは、多めに(前後それぞれ半年ほど)足して、何度も描き直さないようにする
+    const added = opts.wide ? ensureRange(state.y, state.m - 3) + ensureRange(state.y, state.m + 3) : ensureRange(state.y, state.m);
     setTitle();
     let html = "";
     for (let i = 0; i < cal.nw * 7; i++) html += cellHtml(new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + i));
     g.innerHTML = html;
     const old = cal.rowh; measure();
     if (opts.toMonth || keepTop === null || !cal.rowh) scrollToMonth(state.y, state.m, false);
-    else g.scrollTop = (keepTop / (old || cal.rowh) + added) * cal.rowh;
+    else if (added || old !== cal.rowh) g.scrollTop = (keepTop / (old || cal.rowh) + added) * cal.rowh;
   }
   function scrollToMonth(y, m, smooth){
     const g = $("grid"); if (!measure()) return;
@@ -456,10 +496,10 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     const th = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + row * 7 + 4);
     if (Date.now() >= cal.lock) setFocus(th.getFullYear(), th.getMonth() + 1);
     // 端に近づいたら前後の週を足す
-    if (g.scrollTop < cal.rowh * 6 || g.scrollTop + g.clientHeight > (cal.nw - 6) * cal.rowh){
+    if (g.scrollTop < cal.rowh * 10 || g.scrollTop + g.clientHeight > (cal.nw - 10) * cal.rowh){
       const y = th.getFullYear(), m = th.getMonth() + 1;
-      const s0 = sunOf(y, m - 12, 1), end = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + cal.nw * 7);
-      if (s0 < cal.r0 || sunOf(y, m + 25, 1) > end){ state.y = y; state.m = m; renderCal(); }
+      const s0 = sunOf(y, m - BACK_MONTHS, 1), end = new Date(cal.r0.getFullYear(), cal.r0.getMonth(), cal.r0.getDate() + cal.nw * 7);
+      if (s0 < cal.r0 || sunOf(y, m + FWD_MONTHS, 1) > end){ state.y = y; state.m = m; renderCal({wide: true}); }
     }
   }
   function renderSet(){
@@ -489,7 +529,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     $("hlist").innerHTML = hs.length ? hs.map(h => '<div class="hrow"><span class="hd">' + h.date.replace(/-/g,"/") + "(" + WD[dateOf(h.date).getDay()] + ')</span><span>' + esc(h.name) + '</span><button class="mini del" data-hdel="' + h.date + '">削除</button></div>').join("")
       : '<div class="empty" style="border:0">祝日が登録されていません。</div>';
   }
-  function render(){ if (state.view === "cal") renderCal(); else renderSet(); }
+  function render(){ if (state.view === "cal") renderCal(); else if (state.view === "work") renderWork(); else renderSet(); }
 
   // ---------- sheet ----------
   function openSheet(html){ $("sheet-in").innerHTML = html; $("scrim").hidden = false; $("sheet").hidden = false; document.body.style.overflow = "hidden"; }
@@ -767,28 +807,21 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     if (!prev || sunOf(y, m - 1, 1) < cal.r0 || sunOf(y, m + 2, 1) > end){ renderCal({toMonth: true}); return; }
     scrollToMonth(y, m, smooth);
   }
-  function moveMonth(delta){
-    let m = state.m + delta, y = state.y; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; }
-    goMonth(y, m, true);
-  }
-  $("btn-prev").onclick = () => moveMonth(-1);
-  $("btn-next").onclick = () => moveMonth(1);
-  $("btn-today").onclick = () => goMonth(now.getFullYear(), now.getMonth()+1, true);
+  // タイトル(◯年◯月)をタップすると今日の月に戻る
+  $("mtitle").onclick = () => goMonth(now.getFullYear(), now.getMonth()+1, true);
   $("grid").addEventListener("scroll", () => { if (!scrollRaf) scrollRaf = requestAnimationFrame(onCalScroll); }, {passive: true});
   window.addEventListener("resize", () => { if (state.view === "cal" && cal.r0) renderCal(); });
-  const swipe = {x: 0, y: 0, moved: false};
-  $("grid").addEventListener("click", e => { const c = e.target.closest(".cell"); if (!c || !c.dataset.k || swipe.moved) return; openDay(c.dataset.k); });
-  $("cal").addEventListener("touchstart", e => { const t = e.touches[0]; swipe.x = t.clientX; swipe.y = t.clientY; swipe.moved = false; }, {passive: true});
-  $("cal").addEventListener("touchend", e => {
-    const t = e.changedTouches[0]; const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){ swipe.moved = true; moveMonth(dx < 0 ? 1 : -1); setTimeout(() => { swipe.moved = false; }, 350); }
-  }, {passive: true});
+  $("grid").addEventListener("click", e => { const c = e.target.closest(".cell"); if (!c || !c.dataset.k) return; openDay(c.dataset.k); });
   function setView(v){
     document.body.classList.toggle("calmode", v === "cal");
-    state.view = v; $("view-cal").hidden = v !== "cal"; $("view-set").hidden = v !== "set";
-    const b = $("btn-view"); b.textContent = v === "cal" ? "⚙" : "✕"; b.setAttribute("aria-label", v === "cal" ? "設定" : "カレンダーに戻る");
+    state.view = v; $("view-cal").hidden = v !== "cal"; $("view-set").hidden = v !== "set"; $("view-work").hidden = v !== "work";
+    const b = $("btn-view"); b.textContent = v === "set" ? "✕" : "⚙"; b.setAttribute("aria-label", v === "set" ? "カレンダーに戻る" : "設定");
+    $("btn-work").setAttribute("aria-pressed", String(v === "work"));
+    window.scrollTo(0, 0);
     if (v === "cal") renderCal({toMonth: true}); else render();
   }
+  $("btn-work").onclick = () => { wkFlush(); setView(state.view === "work" ? "cal" : "work"); };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") wkFlush(); });
   // ---------- 表示モード ----------
   const THEME_KEY = "myschedule.theme";
   function getTheme(){ try { const t = localStorage.getItem(THEME_KEY); return t === "light" || t === "dark" ? t : "auto"; } catch(_){ return "auto"; } }
@@ -803,12 +836,9 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     applyTheme(t);
   };
   applyTheme(getTheme());
-  $("btn-view").onclick = () => setView(state.view === "cal" ? "set" : "cal");
+  $("btn-view").onclick = () => { wkFlush(); setView(state.view === "set" ? "cal" : "set"); };
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !$("sheet").hidden) closeSheet();
-    if ($("sheet").hidden && state.view === "cal" && !/INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || "")){
-      if (e.key === "ArrowLeft") moveMonth(-1); if (e.key === "ArrowRight") moveMonth(1);
-    }
   });
 
   // ---------- local store (このスマホの中に保存) ----------
@@ -826,7 +856,8 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     catch(e){ storageOk = false; throw {code: e && e.name === "QuotaExceededError" ? "quota_exceeded" : "unavailable"}; }
   }
   function stampedDefaults(){ const c = clone(DEFAULTS); Object.keys(c).forEach(k => { c[k]._t = 0; }); return c; }
-  if (!store){ store = {days: {}, config: stampedDefaults()}; try { persist(); } catch(_){} }
+  if (!store){ store = {days: {}, config: stampedDefaults(), work: {}}; try { persist(); } catch(_){} }
+  if (!store.work) store.work = {};
   const listeners = {days: [], doc: {}};
   const snapDoc = (id, d) => ({id, exists: !!d, data: () => d});
   function emitDays(){ const docs = Object.keys(store.days).filter(id => !store.days[id]._del).sort().map(id => snapDoc(id, store.days[id])); listeners.days.forEach(f => f({docs})); }
@@ -849,7 +880,8 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
   // ---------- backup ----------
   function backupData(){
     const days = {}; Object.keys(store.days).forEach(k => { if (!store.days[k]._del) days[k] = store.days[k]; });
-    return {app: "my-schedule", version: 1, exportedAt: new Date().toISOString(), days, config: store.config};
+    const work = {}; Object.keys(store.work || {}).forEach(k => { if (!store.work[k]._del) work[k] = store.work[k]; });
+    return {app: "my-schedule", version: 2, exportedAt: new Date().toISOString(), days, config: store.config, work};
   }
   $("btn-export").onclick = async () => {
     const d = new Date(); const name = "my-schedule-" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".json";
@@ -874,7 +906,11 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     $("ip-no").onclick = () => { $("impconf").innerHTML = ""; };
     $("ip-yes").onclick = () => {
       const prev = store; const now = Date.now();
-      const next = {days: clone(data.days), config: Object.assign(stampedDefaults(), clone(data.config))};
+      const next = {days: clone(data.days), config: Object.assign(stampedDefaults(), clone(data.config)), work: clone(data.work && typeof data.work === "object" ? data.work : {})};
+      // 業務管理: バックアップに入っていない日は、空にした扱いにする(古いバックアップなら業務管理はそのまま)
+      if (data.work && typeof data.work === "object") Object.keys(store.work || {}).forEach(k => { if (!next.work[k]) next.work[k] = {_t: now, _del: true}; });
+      else next.work = clone(store.work || {});
+      Object.values(next.work).forEach(v => { v._t = now; });
       // 読み込んだ内容を「いちばん新しい変更」として扱う(同期先も置き換わる)
       Object.keys(store.days).forEach(k => { if (!next.days[k]) next.days[k] = {_t: now, _del: true}; });
       Object.values(next.days).forEach(v => { v._t = now; });
@@ -885,12 +921,102 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
     };
   };
 
+  // ---------- 業務管理(日ごとの「マスト」「できたら」) ----------
+  // データ: store.work["YYYY-MM-DD/must"] = {items: [{t, d, s}], _t}(できたらは "/can")
+  //   t=内容 d=チェック済み s=明日に送った印(旧仕様。今は送ると今日の行から消える)。空の行は末尾から切り詰めて保存
+  //   マストとできたらを別々に保存するので、2台で別の欄を同時に書いても両方残る
+  const WK_ROWS = 1; // 最初に出す行数(マスト・できたら それぞれ)
+  const wk = { date: todayKey, extra: {}, dirty: {} }; // dirty: 画面で書き換えたが、まだ保存していない欄
+  function wkList(k, sec){ const v = store.work[k + "/" + sec]; return (v && !v._del && Array.isArray(v.items) ? v.items : []).map(r => ({t: String(r.t || ""), d: !!r.d, s: !!r.s})); }
+  function wkSave(k, sec, list){
+    const id = k + "/" + sec;
+    const trimmed = list.slice(); while (trimmed.length && !trimmed[trimmed.length - 1].t.trim() && !trimmed[trimmed.length - 1].d) trimmed.pop();
+    const before = JSON.stringify(wkList(k, sec));
+    if (JSON.stringify(trimmed) === before) return; // 変わっていなければ保存しない(同期の取り合いを減らす)
+    if (trimmed.length) store.work[id] = {items: trimmed, _t: Date.now()};
+    else if (store.work[id]) store.work[id] = {_t: Date.now(), _del: true};
+    try { persist(); } catch(err){ toast(errMsg(err)); }
+    scheduleSync();
+  }
+  function wkRows(k, sec){
+    const list = wkList(k, sec);
+    // 表示する行数 = 最初の行数・保存済みの行数・「行を追加」で増やした行数 のうち多いほう
+    const n = Math.max(WK_ROWS, list.length, wk.extra[k + sec] || 0);
+    while (list.length < n) list.push({t: "", d: false, s: false});
+    return list;
+  }
+  function addDaysKey(k, n){ const d = dateOf(k); d.setDate(d.getDate() + n); return key(d.getFullYear(), d.getMonth()+1, d.getDate()); }
+  let wkPending = false;
+  function renderWork(force){
+    // 入力中(キーボードが出ている間)に同期で描き直すと入力が途切れるので、入力が終わってから描き直す
+    const ae = document.activeElement;
+    if (!force && ae && $("wk-body").contains(ae) && ae.matches("input[type=text]")){ wkPending = true; return; }
+    wkPending = false;
+    const k = wk.date, d = dateOf(k);
+    const rel = k === todayKey ? "今日" : k === addDaysKey(todayKey, 1) ? "明日" : k === addDaysKey(todayKey, -1) ? "昨日" : "";
+    $("wk-title").innerHTML = (d.getMonth()+1) + "月" + d.getDate() + "日(" + WD[d.getDay()] + ")" + (rel ? "<small>" + rel + "</small>" : "");
+    $("wk-title").setAttribute("aria-label", (d.getMonth()+1) + "月" + d.getDate() + "日" + (rel ? "、" + rel : "") + "(タップで今日に戻る)");
+    const sec = (id, title) => '<div class="wk-sec ' + id + '"><h2>' + title + "</h2>" + wkRows(k, id).map((r, i) =>
+      '<div class="wk-row' + (r.d ? " done" : "") + (r.s ? " sent" : "") + '" data-sec="' + id + '" data-i="' + i + '">' +
+      '<label class="ck"><input type="checkbox" data-ck' + (r.d ? " checked" : "") + ' aria-label="' + title + " " + (i+1) + '行目を済みにする"></label>' +
+      '<input type="text" data-tx value="' + esc(r.t) + '" aria-label="' + title + " " + (i+1) + '行目" enterkeyhint="done" autocomplete="off">' +
+      '<button class="tmr" data-tm' + (r.t.trim() ? "" : " disabled") + ' aria-label="明日のマストに移す">明日</button></div>').join("") +
+      '<button class="wk-add" data-add="' + id + '">＋ 行を追加</button></div>';
+    $("wk-body").innerHTML = sec("must", "マスト") + sec("can", "できたら");
+  }
+  function wkCurrent(sec){ return [...$("wk-body").querySelectorAll('.wk-row[data-sec="' + sec + '"]')].map((row, i) => { const prev = wkRows(wk.date, sec)[i] || {}; return {t: row.querySelector("[data-tx]").value, d: row.querySelector("[data-ck]").checked, s: !!prev.s}; }); }
+  let wkTimer = null;
+  $("wk-body").addEventListener("input", e => {
+    const row = e.target.closest(".wk-row"); if (!row || !e.target.matches("[data-tx]")) return;
+    row.querySelector("[data-tm]").disabled = !e.target.value.trim();
+    const sec = row.dataset.sec; clearTimeout(wkTimer); wk.dirty[sec] = true;
+    wkTimer = setTimeout(wkFlush, 400);
+  });
+  $("wk-body").addEventListener("change", e => {
+    const row = e.target.closest(".wk-row"); if (!row) return;
+    if (e.target.matches("[data-ck]")) row.classList.toggle("done", e.target.checked);
+    wk.dirty[row.dataset.sec] = true; wkFlush();
+  });
+  $("wk-body").addEventListener("focusout", () => { wkFlush(); setTimeout(() => { if (wkPending && state.view === "work") renderWork(); }, 0); });
+  $("wk-body").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing && e.target.matches("[data-tx]")) e.target.blur(); });
+  $("wk-body").addEventListener("click", e => {
+    const add = e.target.closest("[data-add]");
+    if (add){
+      const sec = add.dataset.add; wkFlush();
+      wk.extra[wk.date + sec] = $("wk-body").querySelectorAll('.wk-row[data-sec="' + sec + '"]').length + 1; renderWork(true);
+      const rows = $("wk-body").querySelectorAll('.wk-row[data-sec="' + sec + '"] [data-tx]'); rows[rows.length - 1].focus();
+      return;
+    }
+    const tm = e.target.closest("[data-tm]");
+    if (tm){
+      const row = tm.closest(".wk-row"), sec = row.dataset.sec, i = +row.dataset.i;
+      wkFlush();
+      const list = wkRows(wk.date, sec); const text = (list[i] || {t: ""}).t.trim(); if (!text) return;
+      // 今日の欄からは消して、明日へ移す
+      list.splice(i, 1); wkSave(wk.date, sec, list);
+      if (wk.extra[wk.date + sec]) wk.extra[wk.date + sec] = Math.max(0, wk.extra[wk.date + sec] - 1);
+      // 明日のマストへ: 空いている行があればそこに、なければ末尾に足す
+      const tk = addDaysKey(wk.date, 1); const must = wkRows(tk, "must");
+      const j = must.findIndex(r => !r.t.trim() && !r.d);
+      const item = {t: text, d: false, s: false};
+      if (j >= 0) must[j] = item; else must.push(item);
+      wkSave(tk, "must", must);
+      renderWork(true); const d = dateOf(tk); toast((d.getMonth()+1) + "/" + d.getDate() + " のマストに移しました");
+    }
+  });
+  // 書き換えた欄だけを保存する(書いていない欄は、もう1台の変更を上書きしないように触らない)
+  function wkFlush(){ clearTimeout(wkTimer); ["must", "can"].forEach(sec => { if (wk.dirty[sec]){ wk.dirty[sec] = false; wkSave(wk.date, sec, wkCurrent(sec)); } }); }
+  function wkGo(k){ wkFlush(); wk.date = k; renderWork(true); }
+  $("wk-prev").onclick = () => wkGo(addDaysKey(wk.date, -1));
+  $("wk-next").onclick = () => wkGo(addDaysKey(wk.date, 1));
+  $("wk-title").onclick = () => wkGo(todayKey);
+
   // ---------- sync (自分のGoogleスプレッドシート経由で2台を同期) ----------
   const SYNC_KEY = "myschedule.sync";
   const tOf = (v) => (v && typeof v._t === "number") ? v._t : 1;
   function mergeStore(a, b){
-    const res = {days: {}, config: {}};
-    ["days", "config"].forEach(sec => {
+    const res = {days: {}, config: {}, work: {}};
+    ["days", "config", "work"].forEach(sec => {
       const A = (a && a[sec]) || {}, B = (b && b[sec]) || {};
       new Set(Object.keys(A).concat(Object.keys(B))).forEach(k => {
         const x = A[k], y = B[k];
@@ -925,7 +1051,7 @@ textarea,input[type=text],input[type=date],select{width:100%;font:inherit;font-s
       const changed = JSON.stringify(merged) !== JSON.stringify(store);
       store = merged;
       try { persist(); } catch(_){}
-      if (changed) emitAll();
+      if (changed){ emitAll(); if (state.view === "work") renderWork(); }
       lastSync = new Date(); syncErr = "";
     } catch(e){
       syncErr = e && e.message === "unauthorized" ? "接続コードが正しくありません。設定し直してください" : "同期できませんでした。電波のある場所で開き直すと再開します";
